@@ -8,102 +8,371 @@
 #include <random>
 #include <ctime>
 #include <fstream>
-#include <filesystem> // C++17 for file existence check
+#include <cassert>
+#include <chrono> // 包含chrono库
+#include <algorithm> // 用于std::shuffle
+#include <random> // 用于随机数生成
+// #include <filesystem> // C++17 for file existence check
 #include "Graph.h"
 #include "CoreGroup.h"
 #include "TreeIndex.h"
+#include "DirectedGraph.h"
+#include "QuerySharingGraph.h"
+#include "BatchEnum.h"
+#include "SharingIndex.h"
+
+void fisherYatesShuffle(std::vector<int>& vec) {
+    // 使用当前时间作为随机数种子
+    std::srand(static_cast<unsigned>(std::time(0)));
+
+    for (size_t i = vec.size() - 1; i > 0; --i) {
+        // 生成一个0到i之间的随机索引
+        size_t j = std::rand() % (i + 1);
+
+        // 交换vec[i]和vec[j]
+        std::swap(vec[i], vec[j]);
+    }
+}
+
+void pro_1_1(Graph& graph, std::string path) {
+    // 获取图中所有节点
+    std::vector<int> allNodes;
+    for (int i = 0; i < graph.getAdj().size(); ++i) {
+        allNodes.push_back(i);
+    }
+
+    int k = 50;
+    int num = k;
+    std::ofstream outFile(path);
+    if (!outFile.is_open()) {
+        std::cerr << "无法打开 results.csv 文件" << std::endl;
+        return;
+    }
+
+    std::vector<std::vector<int>> group;
+
+    // 写入 CSV 头部
+    outFile << "TestNumber,QueryNodes,GreedySize,GreedyMinDegree,TreeIndexSize,TreeIndexMinDegree,SameResult\n";
+
+    int sameResultCount1 = 0;
+    int sameResultCount2 = 0;
+
+    while (k--) {
+        std::cout << "第 " << (num - k) << " 次测试" << std::endl;
+        // 随机打乱节点顺序
+        fisherYatesShuffle(allNodes);
+
+        // 初始化随机数生成器
+        srand(static_cast<unsigned int>(time(0)));
+
+        // 随机选择1到5个节点
+        int numQueryNodes = 1 + rand() % 5;  // 随机生成1到5的数量
+        std::vector<int> queryNodes(allNodes.begin(), allNodes.begin() + numQueryNodes);
+
+        // 将 vector 转换为 unordered_set
+        std::unordered_set<int> querySet(queryNodes.begin(), queryNodes.end());
+
+        // 检查查询顶点集是否连通
+        std::unordered_map<int, int> degree = graph.getDegrees();
+
+        bool flag = true;
+        flag = graph.isConnected(querySet, degree);
+        if (!flag) {
+            std::cout << "查询顶点集不连通！" << std::endl;
+            k++;
+            continue;
+        }
+        
+        // 保存查询顶点集
+        group.push_back(queryNodes);
+
+        // 测试Greedy算法
+        std::unordered_set<int> greedySolution = graph.greedy_d3(querySet);
+        int greedySize = greedySolution.size();
+        int greedyMinDegree = graph.computesubMinimumDegree(greedySolution);
+
+        // 测试TreeIndex算法
+        TreeIndex index = TreeIndex(graph);
+        std::unordered_set<int> indexSolution = index.findKCoreSubgraph(queryNodes);
+        int indexSize = indexSolution.size();
+        int indexMinDegree = graph.computesubMinimumDegree(indexSolution);
+
+        // 检查两个结果是否相同
+        bool sameResult1 = (greedySize == indexSize);
+        if (sameResult1) {
+            sameResultCount1++;
+        }
+        bool sameResult2 = (greedyMinDegree == indexMinDegree);
+        if (sameResult2) {
+            sameResultCount2++;
+        }
+
+        // 将查询顶点集转换为字符串
+        std::string queryNodesStr;
+        for (int node : queryNodes) {
+            queryNodesStr += std::to_string(node) + " 、";
+        }
+        if (!queryNodesStr.empty()) {
+            queryNodesStr.pop_back(); // 移除最后一个逗号
+        }
+
+        // 将结果写入 CSV 文件
+        outFile << num << "," 
+                << queryNodesStr << "," 
+                << greedySize << "," 
+                << greedyMinDegree << ","
+                << indexSize << ","
+                << indexMinDegree << ","
+                << ((sameResult1 && sameResult2) ? "True" : "False") << "\n";
+    }
+    // 计算相同率
+    double sameRate1 = static_cast<double>(sameResultCount1) / num * 100;
+    double sameRate2 = static_cast<double>(sameResultCount2) / num * 100;
+
+    // 将相同率写入 CSV 文件
+    outFile << "社区大小相同率," << sameRate1 << "%,,,,,\n";
+    outFile << "k相同率," << sameRate2 << "%,,,,,\n";
+
+    outFile.close();
+    
+    std::cout << "两种算法社区大小相同率为: " << sameRate1 << "%" << std::endl;
+    std::cout << "k相同率为: " << sameRate2 << "%" << std::endl;
+
+    for (auto& q : group) {
+        std::cout << "查询集: ";
+        for (auto& i : q) { 
+            std::cout << i << " ";
+            }
+        std::cout << std::endl;
+    }
+
+    SharingIndex dex= SharingIndex(graph);
+    dex.getKCoreToQuery(group, graph, "batch_1.csv");
+}
+
+void pro_1_2(Graph& graph, std::string path) {
+    // 获取图中所有节点
+    std::vector<int> allNodes;
+    for (int i = 0; i < graph.getAdj().size(); ++i) {
+        // 默认数据集的每个点都有意义，不会出现1，2，70，71~
+        allNodes.push_back(i);
+    }
+
+    int k = 10; // 随机测试100次
+    int num = k;
+    std::ofstream outFile(path);
+    if (!outFile.is_open()) {
+        std::cerr << "无法打开 results.csv 文件" << std::endl;
+        return;
+    }
+
+    // 写入 CSV 头部
+    outFile << "TestNumber,QueryNodes,TreeIndexSize,TreeIndexMinDegree\n";
+
+    std::vector<std::vector<int>> group;
+
+    while (k--) {
+
+        // 打乱allNodes中元素的顺序
+        fisherYatesShuffle(allNodes);
+
+        // 初始化随机数生成器
+        srand(static_cast<unsigned int>(time(0)));
+
+        // 随机选择节点
+        int numQueryNodes = 1 + rand() % 5;  // 随机生成1到10的数量
+        // int numQueryNodes = 3;
+        std::vector<int> queryNodes(allNodes.begin(), allNodes.begin() + numQueryNodes);
+
+        // 将 vector 转换为 unordered_set
+        std::unordered_set<int> querySet(queryNodes.begin(), queryNodes.end());
+
+        // 检查查询顶点集是否连通
+        std::unordered_map<int, int> degree = graph.getDegrees();
+
+        bool flag = true;
+        flag = graph.isConnected(querySet, degree);
+        if (!flag) {
+            std::cout << "查询顶点集不连通！" << std::endl;
+            k++;
+            continue;
+        }
+
+        // 保存查询顶点集
+        group.push_back(queryNodes);
+
+        // 测试TreeIndex算法
+        TreeIndex index = TreeIndex(graph);
+        std::unordered_set<int> indexSolution = index.findKCoreSubgraph(queryNodes);
+        int indexSize = indexSolution.size();
+        int indexMinDegree = graph.computesubMinimumDegree(indexSolution);
+
+        // 将查询顶点集转换为字符串
+        std::string queryNodesStr;
+        queryNodesStr += "{";
+        for (int node : queryNodes) {
+            queryNodesStr += std::to_string(node) + " 、";
+        }
+        queryNodesStr += "}";
+        if (!queryNodesStr.empty()) {
+            queryNodesStr.pop_back(); // 移除最后一个逗号
+        }
+
+        // 将结果写入 CSV 文件
+        outFile << num << "," 
+                << queryNodesStr << ","
+                << indexSize << ","
+                << indexMinDegree << "\n";
+    }
+    
+    outFile.close();
+    for (auto& q : group) {
+        std::cout << "查询集: ";
+        for (auto& i : q) { 
+            std::cout << i << " ";
+            }
+        std::cout << std::endl;
+    }
+
+    SharingIndex dex= SharingIndex(graph);
+    dex.getKCoreToQuery(group, graph, "batch_2_3.csv");
+
+}
+
+void pro_2_2(Graph& graph, std::string path) {
+    // 获取图中所有节点
+    std::vector<int> allNodes;
+    for (int i = 0; i < graph.getAdj().size(); ++i) {
+        // 默认数据集的每个点都有意义，不会出现1，2，70，71~
+        allNodes.push_back(i);
+    }
+
+    int k = 10; // 随机测试10次
+    int num = k;
+    std::ofstream outFile(path);
+    if (!outFile.is_open()) {
+        std::cerr << "无法打开 results.csv 文件" << std::endl;
+        return;
+    }
+
+    // 写入 CSV 头部
+    outFile << "TestNumber,QueryNodes,TreeIndexSize,TreeIndexMinDegree,test1_size,test2_k\n";
+
+    std::vector<std::vector<int>> group;
+
+    while (k--) {
+
+        // 打乱allNodes中元素的顺序
+        fisherYatesShuffle(allNodes);
+
+        // 初始化随机数生成器
+        srand(static_cast<unsigned int>(time(0)));
+
+        // 随机选择节点
+        int numQueryNodes = 1 + rand() % 5;  // 随机生成1到10的数量
+        // int numQueryNodes = 3;
+        std::vector<int> queryNodes(allNodes.begin(), allNodes.begin() + numQueryNodes);
+
+        // 将 vector 转换为 unordered_set
+        std::unordered_set<int> querySet(queryNodes.begin(), queryNodes.end());
+
+        // 检查查询顶点集是否连通
+        std::unordered_map<int, int> degree = graph.getDegrees();
+
+        bool flag = true;
+        flag = graph.isConnected(querySet, degree);
+        if (!flag) {
+            std::cout << "查询顶点集不连通！" << std::endl;
+            k++;
+            continue;
+        }
+
+        // 保存查询顶点集
+        group.push_back(queryNodes);
+
+        // 测试TreeIndex算法
+        TreeIndex index = TreeIndex(graph);
+        std::unordered_set<int> indexSolution = index.findKCoreSubgraph(queryNodes);
+        int indexSize = indexSolution.size();
+        int indexMinDegree = graph.computesubMinimumDegree(indexSolution);
+        std::unordered_set<int> community = index.greedyConnection(queryNodes, indexMinDegree);
+
+        // 将查询顶点集转换为字符串
+        std::string queryNodesStr;
+        queryNodesStr += "{";
+        for (int node : queryNodes) {
+            queryNodesStr += std::to_string(node) + " 、";
+        }
+        queryNodesStr += "}";
+        if (!queryNodesStr.empty()) {
+            queryNodesStr.pop_back(); // 移除最后一个逗号
+        }
+
+        // 将结果写入 CSV 文件
+        outFile << num << "," 
+                << queryNodesStr << ","
+                << indexSize << ","
+                << indexMinDegree << ","
+                << community.size() << ","
+                << graph.computesubMinimumDegree(community) << "\n";
+    }
+    
+    outFile.close();
+    // for (auto& q : group) {
+    //     std::cout << "查询集: ";
+    //     for (auto& i : q) { 
+    //         std::cout << i << " ";
+    //         }
+    //     std::cout << std::endl;
+    // }
+
+    // SharingIndex dex= SharingIndex(graph);
+    // dex.getKCoreToQuery(group, graph, "batch_2_3.csv");
+
+}
 
 int main(int argc, char *argv[])
 {
-    // 检查是否有输入文件路径
-    // if (argc < 2)
-    // {
-    //     std::cerr << "Usage: " << argv[0] << " <path_to_dataset>" << std::endl;
-    //     return 1;
-    // }
-    // // 获取命令行输入的文件路径
-    // std::string dataset_path = argv[1];
-    // std::string indexFile = dataset_path + ".index"; // 索引文件路径
+    // 测试使用的无向图
+    Graph graph("D:\\mySecre\\csp_graph\\a1_2.19\\dataset\\facebook_combined.txt"); // 图  CA-AstroPh Graph_1
+    Graph graph_1("D:\\mySecre\\csp_graph\\a1_2.19\\dataset\\com-dblp.ungraph.txt"); // com-dblp.ungraph 
+    std::cout << "size(00)" << graph.getAdj().size() << "    " << "last_one: " << graph.getAdjlast() << std::endl;
+    // Graph graph1("/ka/a1_2.19/dataset/com-dblp.ungraph.txt"); // 图  CA-AstroPh Graph_1 facebook_combined.txt
+    // 问题一的测试函数
+    // global shellindex share 三种算法的比较，global在较大的图上运行较慢
+    // pro_1_1(graph, "single_1.csv");
 
-    // Graph graph1("/ka/dataset/CA-AstroPh.txt"); // 图  CA-AstroPh
-    Graph graph1("C:/Users/86139/Desktop/index_community/output/CA-AstroPh.txt"); // 图 email-Eu-core.txt
-//    Graph graph1("C:/Users/86139/Desktop/index_community/output/example1.txt");
-    //CoreGroup::coreGroupsAlgorithm(graph1);
-    //std::vector<int> queryNodes={1,2,3}; // 目标集
-//    std::unordered_set<int> queryNodes={1,2,3}; // 目标集
-//    
-//    std::unordered_set<int> H = {};
-//    std::unordered_set<int> H0 = {6};
-//    H = graph1.greedy(queryNodes); // 调用greedy算法
-//    H = graph1.CSTframework(6, 5);
-//    H = graph1.CSMframework(8, -2);
-//   for (auto node : H) {
-//       std::cout << node << " ";
-//   }
-//    std::cout <<graph1.computesubMinimumDegree(H) << " ";
-    // graph1.computesubMinimumDegree(H);
-    //  TreeIndex index = TreeIndex(graph1);  // 创建索引
-    //  std::unordered_set<int> solution3 = index.findKCoreSubgraph(queryNodes);
-    //  //std::unordered_set<int> solution3 = graph1.greedy(queryNodes);
-    //  std::cout << "9" << std::endl;
-    //  std::cout << solution3.size() << std::endl;
-    //  int k = graph1.computesubMinimumDegree(solution3);
-    //  std::cout << k << std::endl;
-     // 打印找到的社区成员
-    //  for (const auto& node : solution3) {
-    //  	for (auto& i : node.second){
-    //  	std::cout << "社区成员: " << i << std::endl;	
-	// 	}
-    //  }
-    
-    
-    
-    // Greedy算法
-//    std::unordered_set<int> queryNodes={3};
-//    std::unordered_set<int> solution1 = {};
-//    solution1 = graph1.greedy(queryNodes);
-//    std::cout <<graph1.computesubMinimumDegree(solution1) << " ";
-    
-    // GreedyDist算法
-    
-    
-    // TreeIndex算法
-//    std::vector<int> queryNodes={84424};
-//    TreeIndex index = TreeIndex(graph1);
-//    std::unordered_set<int> solution3 = index.findKCoreSubgraph(queryNodes);
-//    std::cout << solution3.size() << std::endl;
-//    std::cout <<graph1.computesubMinimumDegree(solution3) << " ";
-//    for (auto& node : solution3) {
-//      	std::cout << "社区成员: " << node << " ";	
-//    }
-    
-    // search算法 localsearch的baseline算法
-// 	int k = 20;
-// 	std::unordered_set<int> queryNode = {3};
-// 	std::unordered_set<int> solution4 = {};
-// //    graph1.search(queryNode, k, solution4);
-//     int q = 3;
-//     solution4 = graph1.baseline_search2(q, k);
-//     std::cout << solution4.size() << std::endl;
-//     for (auto& node : solution4) {
-//       	std::cout << "社区成员: " << node << " ";	
-//     }
-    
-    // CST框架算法
-//    int k = 28;
-//    int queryNode = 3;
-//    std::unordered_set<int> solution5 = {};
-//    solution5 = graph1.CSTframework(queryNode, k);
+    // shellindex share 两种算法的比较
+    // pro_1_2(graph, "single_2_3.csv");
 
-	// CSM框架算法
-	int queryNode = 84424;
-	int gamma = 4;
-	std::unordered_set<int> solution6 = {};
-	solution6 = graph1.CSMframework(queryNode, gamma);
-	std::cout << "最小度" <<graph1.computesubMinimumDegree(solution6) << std::endl;
-//	for (auto& node : solution6) {
-//     	std::cout << "社区成员: " << node << std::endl;	
-//   }
-    
+    // pro_2_2(graph, "a3.csv");
+
+// /*
+    // Graph graph; // 假设你已经加载了图数据
+    TreeIndex treeIndex(graph);
+
+    std::vector<int> queryNodes = {1477 ,1101 ,3686 ,1758 ,2467}; // 查询节点集合 3581 | 1471, 2340 | 1, 6
+    int k = 2; // 最小度数约束
+    std::unordered_set<int> indexSolution = treeIndex.findKCoreSubgraph(queryNodes);
+    int indexSize = indexSolution.size();
+    int indexMinDegree = graph.computesubMinimumDegree(indexSolution);
+    k = indexMinDegree;
+    std::cout << "k: " << k <<std::endl;
+
+    std::unordered_set<int> community = treeIndex.greedyConnection(queryNodes, k);
+
+    std::cout << "Community nodes: ";
+    for (int node : community) {
+        std::cout << node << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Community size: " << community.size() << std::endl;
+
+    indexMinDegree = graph.computesubMinimumDegree(community);
+    k = indexMinDegree;
+    std::cout << "k: " << k <<std::endl;
+// */
+
     return 0;
 }
+

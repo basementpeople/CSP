@@ -11,13 +11,13 @@
 class CoreGroup
 {
 public:
-// 返回节点的核索引（所处的最高k-core）
+    // 核心分解函数 coreGroups
     static std::unordered_map<int, int> coreGroupsAlgorithm(Graph &graph)
     {
-    	// std::cout << "正常进入函数 " << std::endl;
+        // std::cout << "正常进入函数 " << std::endl;
         int maxDegree = 0;                  // 最大度数
         std::unordered_map<int, int> cores; // 存储每个节点的核心度
-        std::vector<std::unordered_set<int>> orderedNodes(graph.getNumberOfNodes());
+        std::vector<std::unordered_set<int>> orderedNodes(graph.getNumberOfNodes());  // 获取图的节点数，声明一个节点列表
 
         // 初始化orderedNodes
         for (int i = 0; i < graph.getNumberOfNodes(); ++i)
@@ -26,7 +26,7 @@ public:
         }
 
         // 将节点按度数分类
-        std::unordered_map<int, int> degrees = graph.getDegrees();
+        std::unordered_map<int, int> degrees = graph.getDegrees();  // 获取图的节点度数
         for (const auto &entry : degrees)
         {
             orderedNodes[entry.second].insert(entry.first);

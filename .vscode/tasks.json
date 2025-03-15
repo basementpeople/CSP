@@ -1,0 +1,44 @@
+{
+	// 版本号，指定JSONC配置文件的版本
+	"version": "2.0.0",
+	// 任务配置数组，用于配置构建任务
+	"tasks": [
+		{
+			// 任务类型，此处为C++构建任务
+			"type": "cppbuild",
+			// 任务标签，用于标识任务
+			"label": "C/C++: g++.exe 生成活动文件",
+			// 编译命令，指定g++编译器的路径
+			"command": "D:/mySecre/download/tool/MinGW/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0/mingw64/bin/g++.exe",
+			// 编译参数，配置编译过程中的选项和文件路径
+			"args": [
+				// 请求诊断信息始终使用颜色，提高错误信息的可读性
+				"-fdiagnostics-color=always",
+				// 生成调试信息，便于调试
+				"-g",
+				// 设置执行字符集为GBK，适应中文环境
+				"-fexec-charset=GBK",
+				// 指定源文件路径，使用通配符匹配当前工作目录下的所有.cpp文件
+				// "${workspaceFolder}\\*.cpp",
+				// "${workspaceFolder}/**/*.cpp",
+				"${workspaceFolder}\\Topo\\*.cpp",
+				"${workspaceFolder}\\*.cpp",
+				// 输出文件选项，指定编译输出的可执行文件路径
+				"-o",
+				"${workspaceFolder}\\${workspaceRootFolderName}.exe"
+			],
+			// 任务执行选项，设置当前工作目录
+			"options": {
+				"cwd": "D:/mySecre/download/tool/MinGW/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0/mingw64/bin"
+			},
+			// 问题匹配器，用于识别编译器输出的问题
+			"problemMatcher": [
+				"$gcc"
+			],
+			// 任务分组，将此任务归类到构建组
+			"group": "build",
+			// 详细信息，提供编译器的额外信息
+			"detail": "D:/mySecre/download/tool/MinGW/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0/mingw64/bin/g++.exe"
+		}
+	]
+}
