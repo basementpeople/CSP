@@ -1,16 +1,20 @@
 #include "Graph.h"
 
 // 1. 构造函数和析构函数
-Graph::Graph(std::string path)
-{
+Graph::Graph(const std::string path) {
        readFromFile(path);
        computeDegrees();
-       computeMinimumDegree();
        statistic();
 }
 
-Graph::Graph(Graph &graph)
-{
+// 这个构造函数的意义
+Graph::Graph() {
+    m = 0;
+    n = 0;
+}
+
+// 深拷贝构造函数，1有没有必要
+Graph::Graph(const Graph &graph) {
     // 拷贝邻接表
     adj = graph.adj; // unordered_map 自动进行深拷贝
 
@@ -22,18 +26,21 @@ Graph::Graph(Graph &graph)
 
     // 拷贝最小度
     minimumDegree = graph.minimumDegree;
-}
 
-Graph::Graph()
-{
-    m = 0;
-    n = 0;
+    // 拷贝最大度
+    Dmax = graph.Dmax;
+
+    // 拷贝图的节点数
+    n = graph.n;
+
+    // 拷贝图的边数
+    m = graph.m;
 }
 
 Graph::~Graph() {}
 
-Graph Graph::getGraph(std::unordered_set<int> &subVertices)
-{
+// 社区节点集合转Graph，有没有必要
+Graph Graph::getGraph(std::unordered_set<int> &subVertices) {
     // 创建一个新的 Graph 对象
     Graph subGraph;
 
@@ -64,59 +71,13 @@ Graph Graph::getGraph(std::unordered_set<int> &subVertices)
     subGraph.m /= 2;
     // 计算新的 Graph 的度数、最小度数等统计信息
     subGraph.computeDegrees();
-    subGraph.computeMinimumDegree();
+    // subGraph.computeMinimumDegree();
     subGraph.statistic();
 
     return subGraph;
 }
 
 // 2 Greedy算法
-
-// 广搜没办法保存点，用深搜可以试试
-
-// std::vector<int> Graph::isQuerySetConnected(query_nodes queryNodes, std::unordered_map<int, int> degree) {
-//     if (queryNodes.empty()) return {};
-
-//     std::unordered_set<int> visited;
-
-//     // 从查询节点中的任意一个开始遍历
-//     auto startIt = queryNodes.begin();
-
-//     int count = 0;
-//     std::vector<int> tree;
-//     tree = dfs(*startIt, visited, queryNodes, count, degree);
-
-//     // 如果所有查询节点都被访问过，则说明它们是连通的
-//     return tree;
-// }
-
-// std::vector<int> Graph::dfs(int current, std::unordered_set<int> visited, query_nodes queryNodes, int count, std::unordered_map<int, int> degree) {
-//     std::vector<int> tree;
-//     visited.insert(current);
-//     tree.push_back(current);
-//     // std::cout << "current: " << current << std::endl;
-
-//     if (queryNodes.count(current)) {
-//         count++;
-//     }
-//     if (count == queryNodes.size()) {
-//         return tree;
-//     }
-//     // 遍历当前节点的所有邻居
-//     for (const auto& neighbor : getNeighbors(current)) {
-//         // 如果邻居也在查询节点集中且未被访问过，则递归访问
-//         if (!visited.count(neighbor) && degree[neighbor] > 0) {
-//             std::vector<int> tmp = dfs(neighbor, visited, queryNodes, count, degree);
-//             if (tmp.size() > 0) {
-//                 tree.insert(tree.end(), tmp.begin(), tmp.end()); // 使用 insert 方法
-//                 return tree;
-//             }
-//         }
-//     }
-//     // std::cout << "not found" << std::endl;
-//     return {};
-// }
-
 std::vector<int> Graph::isQuerySetConnected(query_nodes queryNodes, std::unordered_map<int, int> degree) {
     if (queryNodes.empty()) return {}; // 如果查询节点为空，直接返回空
 
@@ -153,52 +114,6 @@ void Graph::dfs(int current, std::unordered_set<int>& visited, const query_nodes
             dfs(neighbor, visited, queryNodes, count, degree, tree);
         }
     }
-}
-
-bool Graph::isConnected(query_nodes queryNodes, std::unordered_map<int, int> degree) {
-    if (queryNodes.empty() || degree.empty()) return false; // 如果查询节点为空，直接返回空
-
-    std::unordered_set<int> visited; // 存储已访问的节点
-    std::queue<int> q;
-    for (int startNode : queryNodes)
-    {
-        if (degree.find(startNode) != degree.end() && degree.at(startNode) > 0)
-        {
-            q.push(startNode);
-            visited.insert(startNode);
-            break;
-        }
-    }
-
-    if (q.empty())
-    {
-        return false; // 如果没有有效的起始节点，则直接返回不连通
-    }
-
-    while (!q.empty())
-    {
-        // std::cout<<"BFS"<<std::endl;
-        int node = q.front();
-        q.pop();
-        for (int neighbor : getNeighbors(node))
-        {
-            if (degree.find(neighbor) != degree.end() && visited.insert(neighbor).second && degree.at(neighbor) > 0)
-            {
-                q.push(neighbor);
-            }
-        }
-    }
-
-    // 检查所有查询节点是否都在访问集合中
-    for (int node : queryNodes)
-    {
-        if (visited.find(node) == visited.end())
-        {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 
@@ -302,8 +217,7 @@ std::unordered_set<int> Graph::greedy(query_nodes& queryNodes)
    return result_is;
 }
 
-std::unordered_set<int> Graph::greedy_d1(query_nodes& queryNodes)
-{
+std::unordered_set<int> Graph::greedy_d1(query_nodes& queryNodes) {
     std::cout << "开始执行 Greedy 算法" << std::endl;
         std::vector<std::unordered_set<int>> list = getOrderedNodes();
         std::unordered_map<int, int> degree = getDegrees();
@@ -445,17 +359,76 @@ std::unordered_set<int> Graph::greedy_d1(query_nodes& queryNodes)
         return result_end;
 }
 
-std::unordered_set<int> Graph::greedy_d3(query_nodes& queryNodes)
-{
+std::unordered_set<int> Graph::greedy_d2(query_nodes& queryNodes) {
+    std::vector<std::unordered_set<int>> list = getOrderedNodes();
+    std::unordered_map<int, int> degree = getDegrees();
+
+    int node;             // 当前处理的节点
+    int lowestDegree = 0; // 当前的最低度数
+    int neighborDegree;   // 邻居的度数
+
+    // 主循环
+    while (!list.empty())
+    {
+        if (lowestDegree > 0)
+        {
+            if (!list[lowestDegree-1].empty())
+            {
+                --lowestDegree; // 如果没有该度数的节点，减少度数
+            }
+        }
+        if (list[lowestDegree].empty())
+        {
+            ++lowestDegree; // 如果没有该度数的节点，增加度数
+        }
+        else
+        {
+            std::cout << "000000000000000!" << std::endl;
+            int flag = 0;
+            // 检查是否包含查询节点
+            for (auto& pair : list[lowestDegree]) {
+                if (queryNodes.count(pair)) {
+                    flag = 1;
+                    break;
+                    std::cout << "Found query node!" << pair << std::endl;
+                }
+            }
+            if (flag) break; // 包含查询节点，结束搜索
+            node = *list[lowestDegree].begin();
+            list[lowestDegree].erase(node);
+            degree[node] = -1;         // 将节点度数设为-1，标记已处理
+
+            // 更新所有邻居的度数
+            for (int neighbor : getNeighbors(node))
+            {
+                neighborDegree = degree[neighbor];
+                
+                list[neighborDegree].erase(neighbor);
+                if (neighborDegree > 1) {
+                    list[neighborDegree - 1].insert(neighbor);
+                }
+                degree[neighbor] = neighborDegree - 1;
+                
+            }
+        }
+    }
+    std::unordered_set<int> result;
+    for (const auto& pair : degree) {
+        if (pair.second != -1) {
+            result.insert(pair.first);  // 获取键
+        }
+    }
+    return result;
+}
+
+std::unordered_set<int> Graph::greedy_d3(query_nodes& queryNodes) {
     std::vector<std::unordered_set<int>> list = getOrderedNodes();
     std::unordered_map<int, int> degree = getDegrees();
 
     // 检查查询顶点集是否连通
     bool flag = false;
     flag = isConnected(queryNodes, degree);
-    if (!flag) {
-        return {};
-    }
+    if (!flag) { return {}; }
 
     int node;             // 当前处理的节点
     int lowestDegree = 0; // 当前的最低度数
@@ -464,14 +437,11 @@ std::unordered_set<int> Graph::greedy_d3(query_nodes& queryNodes)
     int k = 0;
 
     // 主循环
-    while (!list.empty())
-    {
-        if (list[lowestDegree].empty())
-        {
+    while (!list.empty()) {
+        if (list[lowestDegree].empty()) {
             ++lowestDegree; // 如果没有该度数的节点，增加度数
         }
-        else
-        {
+        else {
             // 检查是否包含查询节点
             for (auto& pair : list[lowestDegree]) {
                 if (queryNodes.count(pair)) {
@@ -480,7 +450,7 @@ std::unordered_set<int> Graph::greedy_d3(query_nodes& queryNodes)
                     break;
                 }
             }
-            if (!flag) break; // 包含查询节点，结束搜索
+            if (!flag) { break; } // 包含查询节点，结束搜索
             node = *list[lowestDegree].begin();
             list[lowestDegree].erase(node);
             int debug_1 = degree[node];
@@ -512,11 +482,9 @@ std::unordered_set<int> Graph::greedy_d3(query_nodes& queryNodes)
         }
 
         int minDegree = INT8_MAX;
-        for (auto &node : result)
-        {
+        for (auto &node : result) {
             int degree = 0;
-            for (auto &neighbor : getNeighbors(node))
-            {
+            for (auto &neighbor : getNeighbors(node)) {
                 if (result.find(neighbor) != result.end()) { degree++; }
             }
             if (degree < minDegree) { minDegree = degree; }
@@ -539,91 +507,93 @@ std::unordered_set<int> Graph::greedy_d3(query_nodes& queryNodes)
     return result_end;
 }
 
-std::unordered_set<int> Graph::getLastResult(query_nodes& queryNodes, std::unordered_set<int>& result_end) {
-    std::unordered_set<int> result;
-    std::queue<int> q;
-    for (auto& node : queryNodes) {
-        q.push(node);
-    }
+std::unordered_set<int> Graph::greedy_end(query_nodes& queryNodes) {
+    std::vector<std::unordered_set<int>> list = getOrderedNodes();
+    std::unordered_map<int, int> degree = getDegrees();
 
-    while (!q.empty()) {
-        int node = q.front();
-        q.pop();
-        // std::cout << "加入节点：" << node << std::endl;
-        result.insert(node);
+    // 检查查询顶点集是否连通
+    bool flag = false;
+    flag = isConnected(queryNodes, degree);
+    if (!flag) { return {}; }
 
-        for (auto& neighbor : getNeighbors(node)) {
-            if (result_end.find(neighbor) != result_end.end() && result.find(neighbor) == result.end()) {
-                q.push(neighbor);
-                result.insert(neighbor);
-                }
+    int node;             // 当前处理的节点
+    int lowestDegree = 0; // 当前的最低度数
+    int neighborDegree;   // 邻居的度数
+    std::unordered_set<int> result_end; // 结果集
+    int k = 0;
+
+    // 主循环
+    while (!list.empty()) {
+        if (list[lowestDegree].empty()) {
+            ++lowestDegree; // 如果没有该度数的节点，增加度数
         }
-    }
-    return result;
-}
-
-std::unordered_set<int> Graph::greedy_d2(query_nodes& queryNodes)
-{
-        std::vector<std::unordered_set<int>> list = getOrderedNodes();
-        std::unordered_map<int, int> degree = getDegrees();
-
-        int node;             // 当前处理的节点
-        int lowestDegree = 0; // 当前的最低度数
-        int neighborDegree;   // 邻居的度数
-
-        // 主循环
-        while (!list.empty())
-        {
-            if (lowestDegree > 0)
-            {
-                if (!list[lowestDegree-1].empty())
-                {
-                    --lowestDegree; // 如果没有该度数的节点，减少度数
+        else {
+            // 检查是否包含查询节点
+            for (auto& pair : list[lowestDegree]) {
+                if (queryNodes.count(pair)) {
+                    std::cout << "1:Found query node!" << pair << std::endl;
+                    flag = false;
+                    break;
                 }
             }
-            if (list[lowestDegree].empty())
-            {
-                ++lowestDegree; // 如果没有该度数的节点，增加度数
-            }
-            else
-            {
-                std::cout << "000000000000000!" << std::endl;
-                int flag = 0;
-                // 检查是否包含查询节点
-                for (auto& pair : list[lowestDegree]) {
-                    if (queryNodes.count(pair)) {
-                        flag = 1;
-                        break;
-                        std::cout << "Found query node!" << pair << std::endl;
-                    }
-                }
-                if (flag) break; // 包含查询节点，结束搜索
-                node = *list[lowestDegree].begin();
-                list[lowestDegree].erase(node);
-                degree[node] = -1;         // 将节点度数设为-1，标记已处理
+            if (!flag) { break; } // 包含查询节点，结束搜索
+            node = *list[lowestDegree].begin();
+            list[lowestDegree].erase(node);
+            int debug_1 = degree[node];
+            degree[node] = -1;         // 将节点度数设为-1，标记已处理
 
-                // 更新所有邻居的度数
-                for (int neighbor : getNeighbors(node))
-                {
-                    neighborDegree = degree[neighbor];
-                    
+            // 检查查询顶点集是否连通
+            flag = isConnected(queryNodes, degree);
+            if (!flag) {
+                std::cout << "3:Query vertex set not connected！" << std::endl;
+                break;
+            }
+
+            // 更新所有邻居的度数
+            for (int neighbor : getNeighbors(node)) {
+                neighborDegree = degree[neighbor];
+                if (neighborDegree > lowestDegree) {
                     list[neighborDegree].erase(neighbor);
-                    if (neighborDegree > 1) {
-                        list[neighborDegree - 1].insert(neighbor);
-                    }
+                    list[neighborDegree - 1].insert(neighbor);
                     degree[neighbor] = neighborDegree - 1;
-                    
                 }
+                if (degree[neighbor] < lowestDegree) { lowestDegree = degree[neighbor]; }
             }
         }
+
         std::unordered_set<int> result;
         for (const auto& pair : degree) {
-            if (pair.second != -1) {
+            if (pair.second != -1 && pair.second != 0) {
                 result.insert(pair.first);  // 获取键
             }
         }
-        return result;
+
+        int minDegree = INT8_MAX;
+        for (auto &node : result) {
+            int degree = 0;
+            for (auto &neighbor : getNeighbors(node)) {
+                if (result.find(neighbor) != result.end()) { degree++; }
+            }
+            if (degree < minDegree) { minDegree = degree; }
+        }
+        if (minDegree > k) {
+            k = minDegree;
+            result_end = result;
+        }
+    }
+
+    flag = isConnected(queryNodes, degree);
+    if (!flag) {
+        std::cout << "查询顶点集不连通！" << std::endl;
+        return {};
+    }
+
+    result_end = getLastResult(queryNodes, result_end);
+
+    std::cout << "得到结果为：" << k << std::endl;
+    return result_end;
 }
+
 
 // 针对单个节点的 Greedy 算法
 std::unordered_set<int> Graph::greedy(int v0)
@@ -797,14 +767,6 @@ std::unordered_set<int> Graph::naiveCandidateGeneration(int v0, int k)
     std::cout << "k：" << k << std::endl;
     return C;
 }
-
-// 全局搜索，不遍历全局，而使用深搜确定一定会返回解（如果有）
-// std::unordered_set<int> Graph::globalsearch(std::unordered_set<int> C, int k)
-// {
-//     std::unordered_set<int> H = std::unordered_set<int>();
-//     search(C, k, H);
-//     return H;
-// }
 
 // CST框架，确定图G中存在解 , V点E边 m为边数，n为节点数，需初始化
 bool Graph::upperBound(int k)
@@ -982,171 +944,165 @@ std::vector<query_group> Graph::Clustering(std::vector<query_nodes>& query_group
 }
 
 
-// 辅助函数，固定最后
-void Graph::addNode(int node)
-{
-    if (adj.find(node) == adj.end())
-    {
-        adj[node] = std::unordered_set<int>();
-        n++;
-    }
-}
-
-bool Graph::addEdge(int from, int to)
-{
-    if (from != to && adj[from].find(to) == adj[from].end())
-    {
-        adj[from].insert(to);
-        m++;
-        return true;
-    }else return false;
-}
-
-void Graph::readFromFile(std::string fileName)
-{
-	m = 0;
-	n = 0;
+// 辅助函数，分界线----------------------------------------------------------------------------------
+void Graph::readFromFile(const std::string fileName) {
     std::ifstream file(fileName);
     if (!file.is_open())
     {
         std::cerr << "Error: File not found." << std::endl;
         exit(1);
     }
-    std::unordered_set<int> nodes;
-    int sum = 0;
-    int tmp = 0;
+    
+    m = 0;
+	n = 0;
     std::string line;
-    last = 0;
     // 测试数据集的边是否适用无向图
-    while (std::getline(file, line))
-    {
-        sum++;
+    while (std::getline(file, line)) {
         int from, to;
-        if (sscanf(line.c_str(), "%d %d", &from, &to) == 2)
-        {
+        if (sscanf(line.c_str(), "%d %d", &from, &to) == 2) {
         	// std::cout << from << "  " << to << std::endl;
-            if (0 <= from && 0 <= to && from != to)
-            {
-                ;
-            }
-            else
+            if (from == to)
             {
                 continue;
             }
             
-                addNode(from);
-                addNode(to);
+            addNode(from);
+            addNode(to);
 
-                addEdge(from, to);
-                addEdge(to, from);
-                
-
-                nodes.insert(from);
-                nodes.insert(to);
-                
-                if (from > tmp)
-                    tmp = from;
-                if (to > tmp)
-                    tmp = to;
+            addEdge(from, to);
         }
-        else
-        {
+        else {
             std::cerr << "Error: Incorrect line format" << std::endl;
         }
-        last = std::max(from, to);
     }
     file.close();
-    m /= 2;
 }
 
-std::unordered_map<int, int> Graph::computeDegrees()
-{
+// 如果adj没有这个点，加入，更新n
+void Graph::addNode(int node) {
+    if (adj.find(node) == adj.end()) {
+        adj[node] = std::unordered_set<int>();
+        n++;
+    }
+}
+
+// 如果adj没有这条边，加入，更新m
+void Graph::addEdge(int from, int to) {
+    if (adj[from].find(to) == adj[from].end()) {
+        adj[from].insert(to);
+    }
+    if (adj[to].find(from) == adj[to].end()) {
+        adj[to].insert(from);
+    }
+    m++;
+}
+
+// 计算degrees，orderedNodes，minimumDegree，Dmax
+std::unordered_map<int, int> Graph::computeDegrees() {
     degrees.clear();
     orderedNodes.clear();
     orderedNodes.resize(adj.size());
 
     Dmax = 0;
+    minimumDegree = INT32_MAX;
 
     for (auto &entry : adj)
     {
         degrees[entry.first] = entry.second.size();
         orderedNodes[entry.second.size()].insert(entry.first);
-        if (entry.second.size() > Dmax)
+        if (entry.second.size() > Dmax) {
             Dmax = entry.second.size();
+        }
+        if (entry.second.size() < minimumDegree) {
+            minimumDegree = entry.second.size();
+        }
     }
 
     return degrees;
 }
 
-// 问题
-int Graph::computeMinimumDegree()
-{
-    for (size_t i = 0; i < orderedNodes.size(); ++i)
+// 更新最小度，有必要吗
+// int Graph::computeMinimumDegree()
+// {
+//     for (size_t i = 0; i < orderedNodes.size(); ++i)
+//     {
+//         if (!orderedNodes[i].empty())
+//         {
+//             minimumDegree = i;
+//             return i;
+//         }
+//     }
+//     return minimumDegree;
+// }
+
+// 打印图的相关信息
+void Graph::statistic() {
+    std::cout << "初始图的信息：" << std::endl;
+    // 节点数
+    std::cout << "节点数为 " << n << std::endl;
+    // 边数
+    std::cout << "边数为 " << m << std::endl;
+    // 最大度数
+    std::cout << "图的最大度数为 " << Dmax << std::endl;
+    // 最小度数
+    std::cout << "图的最小度数为 " << minimumDegree << std::endl;
+}
+
+// 检查查询集是否连通
+bool Graph::isConnected(query_nodes queryNodes, std::unordered_map<int, int> degree) {
+    if (queryNodes.empty() || degree.empty()) return false; // 如果查询节点为空，直接返回空
+
+    std::unordered_set<int> visited; // 存储已访问的节点
+    std::queue<int> q;
+    for (int startNode : queryNodes)
     {
-        if (!orderedNodes[i].empty())
+        if (degree.find(startNode) != degree.end() && degree.at(startNode) > 0)
         {
-            minimumDegree = i;
-            return i;
+            q.push(startNode);
+            visited.insert(startNode);
+            break;
         }
     }
-    return minimumDegree;
-} // 有瑕疵，从0到size，如果节点列表不是连续的，可能会出错
 
-// 在 Graph 类中添加一个新方法来找出度数最大的点
-int Graph::findMaxDegreeNode()
-{
-    if (degrees.empty())
+    if (q.empty())
     {
-        std::cerr << "Error: No nodes in the graph." << std::endl;
-        return -1;
+        return false; // 如果没有有效的起始节点，则直接返回不连通
     }
 
-    int maxDegreeNode = -1;
-    int maxDegree = -1;
-
-    for (const auto &entry : degrees)
+    while (!q.empty())
     {
-        if (entry.second > maxDegree)
+        // std::cout<<"BFS"<<std::endl;
+        int node = q.front();
+        q.pop();
+        for (int neighbor : getNeighbors(node))
         {
-            maxDegree = entry.second;
-            maxDegreeNode = entry.first;
+            if (degree.find(neighbor) != degree.end() && visited.insert(neighbor).second && degree.at(neighbor) > 0)
+            {
+                q.push(neighbor);
+            }
         }
     }
 
-    return maxDegreeNode;
+    // 检查所有查询节点是否都在访问集合中
+    for (int node : queryNodes)
+    {
+        if (visited.find(node) == visited.end())
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
-void Graph::statistic()
-{
-    // std::cout << "Calling statistic() method" << std::endl;
-    // // 节点数
-    // std::cout << "节点数为 " << n << std::endl;
-    // // 边数
-    // std::cout << "边数为 " << m << std::endl;
-    // // 最大度数
-    // std::cout << "最大度数为 " << Dmax << std::endl;
-}
-
-unsigned int Graph::getNumberOfNodes()
-{
-    return n;
-}
-
-std::unordered_map<int, int> Graph::getDegrees()
-{
-    return degrees;
-}
-
-std::unordered_set<int> Graph::getNeighbors(int node)
-{
-    // 获取并返回排序后的邻居节点
+// 获取并返回排序后的邻居节点
+std::unordered_set<int> Graph::getNeighbors(int node) {
     std::vector<int> sortedNeighbors = sortNeighbors(node);
-
     return std::unordered_set<int>(sortedNeighbors.begin(), sortedNeighbors.end());
 }
 
-std::vector<int> Graph::sortNeighbors(int node)
-{
+// 对特定节点的邻居节点进行排序
+std::vector<int> Graph::sortNeighbors(int node) {
     // 获取节点的邻居节点
     std::unordered_set<int> &neighbors = adj[node];
 
@@ -1163,40 +1119,8 @@ std::vector<int> Graph::sortNeighbors(int node)
     return sortedNeighbors;
 }
 
-std::unordered_set<int> Graph::getNodes()
-{
-    std::unordered_set<int> nodes;
-    for (auto &entry : adj)
-    {
-        nodes.insert(entry.first);
-    }
-    return nodes;
-}
-
-std::vector<std::unordered_set<int>> Graph::getOrderedNodes()
-{
-    return orderedNodes;
-}
-
-// 打印adj
-void Graph::printAdj()
-{
-    for (const auto& entry : adj)
-    {
-        int vertex = entry.first;
-        const std::unordered_set<int>& neighbors = entry.second;
-
-        std::cout << "Vertex " << vertex << ": ";
-        for (int neighbor : neighbors)
-        {
-            std::cout << neighbor << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-int Graph::computesubMinimumDegree(std::unordered_set<int> &nodes)
-{
+// 计算子社区中的最小度，比较常用，但打算更新子社区的数据结构
+int Graph::computesubMinimumDegree(std::unordered_set<int> &nodes) {
 	if (nodes.size() == 0) return 0;
     int minDegree = INT8_MAX;
     for (auto &node : nodes)
@@ -1211,4 +1135,89 @@ int Graph::computesubMinimumDegree(std::unordered_set<int> &nodes)
             minDegree = degree;
     }
     return minDegree;
+}
+
+// 确保结果联通
+std::unordered_set<int> Graph::getLastResult(query_nodes& queryNodes, std::unordered_set<int>& result_end) {
+    if (queryNodes.empty() || result_end.empty()) {
+        return {}; // 如果输入集合为空，直接返回空结果
+    }
+
+    std::unordered_set<int> result;
+    std::queue<int> q;
+
+    // 初始化队列
+    for (auto& node : queryNodes) {
+        q.push(node);
+        result.insert(node); // 避免起始节点重复访问
+    }
+
+    while (!q.empty()) {
+        int node = q.front();
+        q.pop();
+
+        for (auto& neighbor : getNeighbors(node)) {
+            if (result.find(neighbor) != result.end()) {
+                continue; // 如果已经访问过，跳过
+            }
+            if (result_end.find(neighbor) != result_end.end()) {
+                q.push(neighbor);
+                result.insert(neighbor);
+            }
+        }
+    }
+
+    return result;
+}
+
+
+// 低价值的辅助函数，可删除
+// 打印adj
+void Graph::printAdj() {
+    for (const auto& entry : adj)
+    {
+        int vertex = entry.first;
+        const std::unordered_set<int>& neighbors = entry.second;
+
+        std::cout << "Vertex " << vertex << ": ";
+        for (int neighbor : neighbors)
+        {
+            std::cout << neighbor << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+// 获取图中节点的数量
+unsigned int Graph::getNumberOfNodes() {
+    return n;
+}
+
+// 在 Graph 类中添加一个新方法来找出度数最大的点
+int Graph::findMaxDegreeNode() {
+    if (degrees.empty()) {
+        std::cerr << "Error: No nodes in the graph." << std::endl;
+        return -1;
+    }
+
+    int maxDegreeNode = -1;
+    int maxDegree = -1;
+
+    for (const auto &entry : degrees) {
+        if (entry.second > maxDegree) {
+            maxDegree = entry.second;
+            maxDegreeNode = entry.first;
+        }
+    }
+
+    return maxDegreeNode;
+}
+
+// 获取图中所有节点
+std::unordered_set<int> Graph::getNodes() {
+    std::unordered_set<int> nodes;
+    for (auto &entry : adj) {
+        nodes.insert(entry.first);
+    }
+    return nodes;
 }

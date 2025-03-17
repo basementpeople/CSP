@@ -100,7 +100,6 @@ DirectedGraph DirectedGraph::getReverseGraph() const {
     reverseGraph.n = n;
     // 计算反向图的度数和最小度数，有什么用呢
     // reverseGraph.computeDegrees();
-    // reverseGraph.computeMinimumDegree();
     // reverseGraph.statistic();
     return reverseGraph;
 }

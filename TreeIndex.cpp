@@ -118,7 +118,7 @@ class UnionFind {
 
 TreeIndex::TreeIndex(Graph &graph)
 {
-    count_port = graph.getCount();
+    count_port = graph.getN();
     setNeighbors(graph);
     setDegrees(graph);
 
@@ -211,7 +211,7 @@ void TreeIndex::computeCoreIndex(Graph &graph)
         node++;
     }
 
-    std::cout << "核心 " << shell_count << std::endl;
+    std::cout << "核心（Shell）层数： " << shell_count << std::endl;
 
     // 打印最大k
     // for (const auto &pair : coreMinimumDegree)
@@ -1897,7 +1897,7 @@ std::unordered_set<int> TreeIndex::greedyStep_simply(std::vector<int>& queryNode
         }
         mu_star = std::min(mu_star, min_degree[node]);
         std::cout << node << "------------uf.find(node)----------: " << uf.find(node) << std::endl;
-        std::cout << "chushi----------: " << mu_star << std::endl;
+        std::cout << "最小度----------: " << mu_star << std::endl;
     }
 
     for (int node : queryNodes) {
@@ -2082,16 +2082,6 @@ std::unordered_set<int> TreeIndex::greedyStep_simply(std::vector<int>& queryNode
     return H_min_star;
 }
 
-std::unordered_set<int> TreeIndex::connectionStep(std::unordered_set<int>& H_min_star, std::vector<int>& queryNodes, int k) {
-    std::unordered_set<int> result;
-    std::vector<int> r1 = steinerTree(H_min_star, queryNodes);
-    std::unordered_set<int> r2(r1.begin(), r1.end());
-    // result = r2;
-    result = greedyStep_simply(r1, k, H_min_star);
-    if (result.size() )
-    return result;
-}
-
 // 斯坦纳树的近似算法，prim
 std::vector<int> TreeIndex::steinerTree(std::unordered_set<int>& H_min_star, const std::vector<int>& terminals) {
     int n = count_port; // 图的节点数
@@ -2138,6 +2128,16 @@ std::vector<int> TreeIndex::steinerTree(std::unordered_set<int>& H_min_star, con
     sort(steinerTree.begin(), steinerTree.end()); // 排序
     steinerTree.erase(unique(steinerTree.begin(), steinerTree.end()), steinerTree.end()); // 去重
     return steinerTree;
+}
+
+std::unordered_set<int> TreeIndex::connectionStep(std::unordered_set<int>& H_min_star, std::vector<int>& queryNodes, int k) {
+    std::unordered_set<int> result;
+    std::vector<int> r1 = steinerTree(H_min_star, queryNodes);
+    std::unordered_set<int> r2(r1.begin(), r1.end());
+    // result = r2;
+    result = greedyStep_simply(r1, k, H_min_star);
+    if (result.size() )
+    return result;
 }
 
 std::unordered_set<int> TreeIndex::greedyConnection(std::vector<int>& queryNodes, int k) {

@@ -21,6 +21,7 @@
 #include "BatchEnum.h"
 #include "SharingIndex.h"
 
+// 洗牌算法
 void fisherYatesShuffle(std::vector<int>& vec) {
     // 使用当前时间作为随机数种子
     std::srand(static_cast<unsigned>(std::time(0)));
@@ -37,8 +38,11 @@ void fisherYatesShuffle(std::vector<int>& vec) {
 void pro_1_1(Graph& graph, std::string path) {
     // 获取图中所有节点
     std::vector<int> allNodes;
-    for (int i = 0; i < graph.getAdj().size(); ++i) {
-        allNodes.push_back(i);
+    // for (int i = 0; i < graph.getAdj().size(); ++i) {
+    //     allNodes.push_back(i);
+    // }
+    for (const auto& pair : graph.getAdj()) {
+        allNodes.push_back(pair.first);
     }
 
     int k = 50;
@@ -117,7 +121,7 @@ void pro_1_1(Graph& graph, std::string path) {
         }
 
         // 将结果写入 CSV 文件
-        outFile << num << "," 
+        outFile << num-k << "," 
                 << queryNodesStr << "," 
                 << greedySize << "," 
                 << greedyMinDegree << ","
@@ -153,9 +157,12 @@ void pro_1_1(Graph& graph, std::string path) {
 void pro_1_2(Graph& graph, std::string path) {
     // 获取图中所有节点
     std::vector<int> allNodes;
-    for (int i = 0; i < graph.getAdj().size(); ++i) {
-        // 默认数据集的每个点都有意义，不会出现1，2，70，71~
-        allNodes.push_back(i);
+    // for (int i = 0; i < graph.getAdj().size(); ++i) {
+    //     // 默认数据集的每个点都有意义，不会出现1，2，70，71~
+    //     allNodes.push_back(i);
+    // }
+    for (const auto& pair : graph.getAdj()) {
+        allNodes.push_back(pair.first);
     }
 
     int k = 10; // 随机测试100次
@@ -180,8 +187,7 @@ void pro_1_2(Graph& graph, std::string path) {
         srand(static_cast<unsigned int>(time(0)));
 
         // 随机选择节点
-        int numQueryNodes = 1 + rand() % 5;  // 随机生成1到10的数量
-        // int numQueryNodes = 3;
+        int numQueryNodes = 1 + rand() % 5;  // 随机生成1到5的数量
         std::vector<int> queryNodes(allNodes.begin(), allNodes.begin() + numQueryNodes);
 
         // 将 vector 转换为 unordered_set
@@ -235,16 +241,21 @@ void pro_1_2(Graph& graph, std::string path) {
     }
 
     SharingIndex dex= SharingIndex(graph);
-    dex.getKCoreToQuery(group, graph, "batch_2_3.csv");
+    dex.getKCoreToQuery(group, graph, "batch_2.csv");
 
 }
 
 void pro_2_2(Graph& graph, std::string path) {
     // 获取图中所有节点
     std::vector<int> allNodes;
-    for (int i = 0; i < graph.getAdj().size(); ++i) {
-        // 默认数据集的每个点都有意义，不会出现1，2，70，71~
-        allNodes.push_back(i);
+
+    // for (int i = 0; i < graph.getAdj().size(); ++i) {
+    //     // 默认数据集的每个点都有意义，不会出现1，2，70，71~
+    //     // 事实上不一定
+    //     allNodes.push_back(i);
+    // }
+    for (const auto& pair : graph.getAdj()) {
+        allNodes.push_back(pair.first);
     }
 
     int k = 10; // 随机测试10次
@@ -327,16 +338,16 @@ void pro_2_2(Graph& graph, std::string path) {
     // }
 
     // SharingIndex dex= SharingIndex(graph);
-    // dex.getKCoreToQuery(group, graph, "batch_2_3.csv");
+    // dex.getKCoreToQuery(group, graph, "batch_4.csv");
 
 }
 
 int main(int argc, char *argv[])
 {
     // 测试使用的无向图
-    Graph graph("D:\\mySecre\\csp_graph\\a1_2.19\\dataset\\facebook_combined.txt"); // 图  CA-AstroPh Graph_1
-    Graph graph_1("D:\\mySecre\\csp_graph\\a1_2.19\\dataset\\com-dblp.ungraph.txt"); // com-dblp.ungraph 
-    std::cout << "size(00)" << graph.getAdj().size() << "    " << "last_one: " << graph.getAdjlast() << std::endl;
+    Graph graph("D:\\mySecre\\workspace\\csp_old\\CSP\\dataset\\facebook_combined.txt");
+    // 可以检测图的顶点是否连续
+    // std::cout << "size(00)" << graph.getAdj().size() << "    " << std::endl;
     // Graph graph1("/ka/a1_2.19/dataset/com-dblp.ungraph.txt"); // 图  CA-AstroPh Graph_1 facebook_combined.txt
     // 问题一的测试函数
     // global shellindex share 三种算法的比较，global在较大的图上运行较慢
@@ -347,16 +358,15 @@ int main(int argc, char *argv[])
 
     // pro_2_2(graph, "a3.csv");
 
-// /*
+ /*
     // Graph graph; // 假设你已经加载了图数据
     TreeIndex treeIndex(graph);
 
     std::vector<int> queryNodes = {1477 ,1101 ,3686 ,1758 ,2467}; // 查询节点集合 3581 | 1471, 2340 | 1, 6
-    int k = 2; // 最小度数约束
     std::unordered_set<int> indexSolution = treeIndex.findKCoreSubgraph(queryNodes);
     int indexSize = indexSolution.size();
     int indexMinDegree = graph.computesubMinimumDegree(indexSolution);
-    k = indexMinDegree;
+    int k = indexMinDegree; // 最小度数约束
     std::cout << "k: " << k <<std::endl;
 
     std::unordered_set<int> community = treeIndex.greedyConnection(queryNodes, k);
@@ -371,7 +381,7 @@ int main(int argc, char *argv[])
     indexMinDegree = graph.computesubMinimumDegree(community);
     k = indexMinDegree;
     std::cout << "k: " << k <<std::endl;
-// */
+ */
 
     return 0;
 }
