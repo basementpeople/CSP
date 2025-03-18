@@ -118,7 +118,7 @@ class UnionFind {
 
 TreeIndex::TreeIndex(Graph &graph)
 {
-    count_port = graph.getN();
+    count_port = graph.getN(); 
     setNeighbors(graph);
     setDegrees(graph);
 
@@ -771,34 +771,6 @@ std::unordered_set<int> TreeIndex::findKCoreSubgraph_d1(std::vector<int> &queryN
 
     // 返回最终结果
     return res;
-}
-
-std::unordered_set<int> TreeIndex::checkResult(std::vector<int> &queryNodes, std::unordered_set<int> &result, Graph &graph) {
-    std::vector<int> tree2;
-    std::unordered_set<int> querySet(queryNodes.begin(), queryNodes.end());
-
-    std::unordered_map<int, int> d2 = {};
-    for (auto& node : graph.getDegrees()) {
-        d2[node.first] = 0;
-    }
-    for (auto& node : result) {
-        d2[node] = 1;
-    }
-
-    tree2 = graph.isQuerySetConnected(querySet, d2);
-    std::cout << "辅助函数已启用 " << tree2.size() << std::endl;
-    if (tree2.size() == 0) {
-        std::cout << "查询顶点集不连通！" << std::endl;
-        // 这里我们增加一个函数，去寻找最大的公共连通分量
-        int k = getKfromIndex(queryNodes);
-        std::cout << "the k is : " << k << std::endl;
-        if (k == -1) {
-            k = 1;
-        }
-        result = findKCoreSubgraph(queryNodes, k);
-    }
-
-    return result;
 }
 
 void TreeIndex::findSubShells(int node, int wander) {

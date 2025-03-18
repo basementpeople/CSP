@@ -38,9 +38,6 @@ void fisherYatesShuffle(std::vector<int>& vec) {
 void pro_1_1(Graph& graph, std::string path) {
     // 获取图中所有节点
     std::vector<int> allNodes;
-    // for (int i = 0; i < graph.getAdj().size(); ++i) {
-    //     allNodes.push_back(i);
-    // }
     for (const auto& pair : graph.getAdj()) {
         allNodes.push_back(pair.first);
     }
@@ -91,9 +88,9 @@ void pro_1_1(Graph& graph, std::string path) {
         group.push_back(queryNodes);
 
         // 测试Greedy算法
-        std::unordered_set<int> greedySolution = graph.greedy_d3(querySet);
-        int greedySize = greedySolution.size();
-        int greedyMinDegree = graph.computesubMinimumDegree(greedySolution);
+        Graph greedySolution = graph.globalsearch(querySet);
+        int greedySize = greedySolution.getN();
+        int greedyMinDegree = greedySolution.getminimumDegree();
 
         // 测试TreeIndex算法
         TreeIndex index = TreeIndex(graph);
@@ -346,17 +343,24 @@ int main(int argc, char *argv[])
 {
     // 测试使用的无向图
     Graph graph("D:\\mySecre\\workspace\\csp_old\\CSP\\dataset\\facebook_combined.txt");
-    // 可以检测图的顶点是否连续
-    // std::cout << "size(00)" << graph.getAdj().size() << "    " << std::endl;
-    // Graph graph1("/ka/a1_2.19/dataset/com-dblp.ungraph.txt"); // 图  CA-AstroPh Graph_1 facebook_combined.txt
-    // 问题一的测试函数
-    // global shellindex share 三种算法的比较，global在较大的图上运行较慢
+
     // pro_1_1(graph, "single_1.csv");
+    query_nodes querySet = {113, 14};
+    // Graph greedySolution = graph.globalsearch(querySet);
+    // int greedySize = greedySolution.getN();
+    // int greedyMinDegree = greedySolution.getminimumDegree();
+    // std::cout << "11: " << greedySize << "\n" << "22: " << greedyMinDegree << std::endl;
+    
+    // std::vector<int> queryNodes = {113, 14};
+    // TreeIndex index = TreeIndex(graph);
+    // std::unordered_set<int> indexSolution = index.findKCoreSubgraph(queryNodes);
+    // int indexSize = indexSolution.size();
+    // int indexMinDegree = graph.computesubMinimumDegree(indexSolution);
+    // std::cout << "11: " << indexSize << "\n" << "22: " << indexMinDegree << std::endl;
 
-    // shellindex share 两种算法的比较
-    // pro_1_2(graph, "single_2_3.csv");
 
-    // pro_2_2(graph, "a3.csv");
+
+    
 
  /*
     // Graph graph; // 假设你已经加载了图数据

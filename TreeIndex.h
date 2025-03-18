@@ -127,7 +127,6 @@ public:
     void findSubShells(int node, int wander);
 
     // 辅助函数
-    std::unordered_set<int> checkResult(std::vector<int> &queryNodes, std::unordered_set<int> &result, Graph &graph);
 
     std::unordered_set<int> getChildShell(int shell);
     std::unordered_set<int> getParentShell(int shell);
