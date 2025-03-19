@@ -14,12 +14,10 @@ void SharingIndex::getKCoreToQuery(const std::vector<std::vector<int>>  &group, 
         int minCoreIndex = INT_MAX;
 
         // 遍历查询节点，确定最小核心索引
-        for (int node : q)
-        {
+        for (int node : q) {
             // 如果节点不在核心索引中，抛出异常
             // if (coreIndex.find(node) == coreMinimumDegree.end())
-            if (coreIndex.find(node) == coreIndex.end())
-            {
+            if (coreIndex.find(node) == coreIndex.end()) {
                 throw std::runtime_error("Error: Node does not exist in core index.");
             }
             std::cout << "the coreIndex of node " << node << " is " << coreMinimumDegree[coreIndex[node]]<< std::endl;
@@ -28,7 +26,7 @@ void SharingIndex::getKCoreToQuery(const std::vector<std::vector<int>>  &group, 
         }
 
         // 找到最大的公共shell，如果这个shell的核心度>=k,不改变k；如果核心度<k，则k=核心度
-        int k = findCommenShell(q);
+        int k = findCommenK(q);
         if (k >= minCoreIndex || k == -1) {
             k = minCoreIndex;
         }
@@ -61,14 +59,12 @@ void SharingIndex::getKCoreToQuery(const std::vector<std::vector<int>>  &group, 
     std::queue<int> componentQueue;
 
     // 将顶层分量的ID加入队列
-    for (int compId : topComponentIds)
-    {
+    for (int compId : topComponentIds) {
         componentQueue.push(compId);
     }
 
     // 广度优先搜索所有分量
-    while (!componentQueue.empty())
-    {
+    while (!componentQueue.empty()) {
         int currentId = componentQueue.front();
         componentQueue.pop();
 
@@ -80,8 +76,7 @@ void SharingIndex::getKCoreToQuery(const std::vector<std::vector<int>>  &group, 
 
         // 获取shell中的一个节点
         int currentNode;
-        for (int node : ComponentToNodes[currentId])
-        {
+        for (int node : ComponentToNodes[currentId]) {
             currentNode = node;
             break;
         }
@@ -180,6 +175,7 @@ void SharingIndex::getKCoreToQuery(const std::vector<std::vector<int>>  &group, 
 
     // std::cout << "k_min: " << k_min << std::endl;
 }
+
 std::unordered_set<int> SharingIndex::getLastResult(std::vector<int>& queryNodes, std::unordered_set<int>& result_end, Graph &graph) {
     std::unordered_set<int> result;
     std::queue<int> q;

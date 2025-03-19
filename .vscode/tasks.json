@@ -21,7 +21,6 @@
 				// 指定源文件路径，使用通配符匹配当前工作目录下的所有.cpp文件
 				// "${workspaceFolder}\\*.cpp",
 				// "${workspaceFolder}/**/*.cpp",
-				"${workspaceFolder}\\Topo\\*.cpp",
 				"${workspaceFolder}\\*.cpp",
 				// 输出文件选项，指定编译输出的可执行文件路径
 				"-o",

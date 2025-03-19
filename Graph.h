@@ -34,7 +34,7 @@ public:
     Graph globalsearch(query_nodes& queryNodes);
     // std::unordered_set<int> globalsearch(query_nodes& queryNodes);
 
-    // 2 batch 算法
+    // 3 batch 算法
     // 计算两个查询之间的相似度
     double querySimilarity(const query_nodes& qA, const query_nodes& qB);
     // 计算两个查询顶点集之间的相似度

@@ -16,9 +16,6 @@
 #include "Graph.h"
 #include "CoreGroup.h"
 #include "TreeIndex.h"
-#include "DirectedGraph.h"
-#include "QuerySharingGraph.h"
-#include "BatchEnum.h"
 #include "SharingIndex.h"
 
 // 洗牌算法
@@ -246,11 +243,6 @@ void pro_2_2(Graph& graph, std::string path) {
     // 获取图中所有节点
     std::vector<int> allNodes;
 
-    // for (int i = 0; i < graph.getAdj().size(); ++i) {
-    //     // 默认数据集的每个点都有意义，不会出现1，2，70，71~
-    //     // 事实上不一定
-    //     allNodes.push_back(i);
-    // }
     for (const auto& pair : graph.getAdj()) {
         allNodes.push_back(pair.first);
     }
@@ -351,9 +343,9 @@ int main(int argc, char *argv[])
     // int greedyMinDegree = greedySolution.getminimumDegree();
     // std::cout << "11: " << greedySize << "\n" << "22: " << greedyMinDegree << std::endl;
     
-    // std::vector<int> queryNodes = {113, 14};
-    // TreeIndex index = TreeIndex(graph);
-    // std::unordered_set<int> indexSolution = index.findKCoreSubgraph(queryNodes);
+    std::vector<int> queryNodes = {113, 14};
+    TreeIndex index = TreeIndex(graph);
+    std::unordered_set<int> indexSolution = index.shellsearch(queryNodes);
     // int indexSize = indexSolution.size();
     // int indexMinDegree = graph.computesubMinimumDegree(indexSolution);
     // std::cout << "11: " << indexSize << "\n" << "22: " << indexMinDegree << std::endl;

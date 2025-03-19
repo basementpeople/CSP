@@ -140,7 +140,6 @@ Graph Graph::globalsearch(query_nodes& queryNodes) {
             if (!flag) { break; } // 包含查询节点，结束搜索
             node = *list[lowestDegree].begin();
             list[lowestDegree].erase(node);
-            int debug_1 = degree[node];
             degree[node] = -1;         // 将节点度数设为-1，标记已处理
 
             // 检查查询顶点集是否连通
@@ -153,11 +152,11 @@ Graph Graph::globalsearch(query_nodes& queryNodes) {
             // 更新所有邻居的度数
             for (int neighbor : getNeighbors(node)) {
                 neighborDegree = degree[neighbor];
-                if (neighborDegree > lowestDegree) {
-                    list[neighborDegree].erase(neighbor);
-                    list[neighborDegree - 1].insert(neighbor);
-                    degree[neighbor] = neighborDegree - 1;
-                }
+                
+                list[neighborDegree].erase(neighbor);
+                list[neighborDegree - 1].insert(neighbor);
+                degree[neighbor] = neighborDegree - 1;
+
                 if (degree[neighbor] < lowestDegree) { lowestDegree = degree[neighbor]; }
             }
         }
