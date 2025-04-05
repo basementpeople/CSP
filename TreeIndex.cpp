@@ -121,58 +121,6 @@ std::unordered_set<int> TreeIndex::shellsearch(query_nodes &queryNodes) {
 
     std::unordered_set<int> res = searchstep(queryNodes, k);
 
-    // // 用于存储所有顶层分量的ID
-    // std::unordered_set<int> topComponentIds;
-    // // 找到所有父分量为-1的顶层分量
-    // topComponentIds = findTopComponents(queryNodes, k);
-
-    // // 用于存储最终结果的节点集合
-    // std::unordered_set<int> resultNodes;
-    // // 用于存储最终结果
-    // std::unordered_set<int> res;
-    // // 用于广度优先搜索的队列
-    // std::queue<int> componentQueue;
-
-    // // 将顶层分量的ID加入队列
-    // for (int compId : topComponentIds) {
-    //     componentQueue.push(compId);
-    // }
-
-    // // 广度优先搜索所有分量
-    // while (!componentQueue.empty()) {
-    //     int currentId = componentQueue.front();
-    //     componentQueue.pop();
-
-    //     // 如果当前分量已经在结果集中，则跳过
-    //     if (resultNodes.find(currentId) != resultNodes.end())
-    //         continue;
-
-    //     // 将当前分量添加到结果集中
-    //     resultNodes.insert(currentId);
-
-    //     // 遍历当前分量的所有子分量
-    //     for (int childCompId : ComponentChildren[currentId]) {
-    //         // 获取子分量中的一个节点
-    //         int childNode;
-    //         for (int node : ComponentToNodes[childCompId]) {
-    //             childNode = node;
-    //             break;
-    //         }
-
-    //         // 如果子分量的节点的核心度大于等于k，将子分量加入队列
-    //         if (coreMinimumDegree[coreIndex[childNode]] >= k) {
-    //             componentQueue.push(childCompId);
-    //         }
-    //     }
-    // }
-
-    // // 将结果集中的所有连通分量的点添加到最终结果中
-    // for (int compId : resultNodes) {
-    //     for (int node : ComponentToNodes[compId]) {
-    //         res.insert(node);
-    //     }
-    // }
-
     while (1) {
         // 检查Q是否连通
         std::unordered_map<int, int> degree;

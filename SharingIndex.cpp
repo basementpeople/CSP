@@ -84,61 +84,6 @@ void SharingIndex::batchsearch(query_group  &group, std::string path = "") {
             KCoreToQuery[k].insert(q_count);
             q_count++;
         }
-    
-        // kToResult.clear();  // 清空核心度到分量的映射
-        // // 找到所有父分量为-1的顶层分量，包括多余的顶层分量，同Treeindex
-        // std::unordered_set<int> topComponentIds = findTopComponents(q_, k_min);
-    
-        // std::unordered_set<int> visited; // 用于存储已经访问过的节点集合
-        // std::queue<int> componentQueue; // 用于广度优先搜索的队列
-    
-        // // 将顶层分量的ID加入队列
-        // for (int compId : topComponentIds) {
-        //     componentQueue.push(compId);
-        // }
-    
-        // // 广度优先搜索所有分量，更新kToResult
-        // while (!componentQueue.empty()) {
-        //     int currentId = componentQueue.front();
-        //     componentQueue.pop();
-    
-        //     // 如果当前分量已经在结果集中，则跳过
-        //     if (visited.find(currentId) != visited.end())
-        //         continue;
-    
-        //     visited.insert(currentId);
-    
-        //     // 获取shell中的一个节点
-        //     int currentNode;
-        //     for (int node : ComponentToNodes[currentId]) {
-        //         currentNode = node;
-        //         break;
-        //     }
-    
-        //     // 如果子分量的节点的核心度大于等于k
-        //     int k_tmp = coreMinimumDegree[coreIndex[currentNode]];
-        //     if (k_tmp >= k_min) {
-        //         // 将当前分量添加到结果集中
-        //         kToResult[k_tmp].insert(currentId);
-        //     }
-    
-        //     // 遍历当前分量的所有子分量
-        //     for (int childCompId : ComponentChildren[currentId]) {
-        //         // 获取子分量中的一个节点
-        //         int childNode;
-        //         for (int node : ComponentToNodes[childCompId]) {
-        //             childNode = node;
-        //             break;
-        //         }
-    
-        //         // 如果子分量的节点的核心度大于等于k，将子分量加入队列
-        //         int k_tmp = coreMinimumDegree[coreIndex[childNode]];
-        //         if (k_tmp >= k_min) {
-        //             componentQueue.push(childCompId);
-        //         }
-    
-        //     }
-        // }
         
         searchstep(q_, k_min);
         std::unordered_set<int> res; // 用于存储最终结果的连通分量集合
