@@ -22,25 +22,16 @@ class Graph
 {
 public:
     // 1 构造函数和析构函数
-    Graph(const std::string path);
-    Graph(const Graph &graph);
-    Graph(std::unordered_set<int> &subVertices, Graph &graph);
-    Graph();
-    ~Graph();
-    
-    Graph getGraph(std::unordered_set<int> &subVertices); // 根据节点集构造图，不规范，后续改成构造函数
+    Graph(const std::string path); // 用来从文件中获取初始的Graph
+    Graph(const Graph &graph):adj(graph.adj),degrees(graph.degrees),orderedNodes(graph.orderedNodes),minimumDegree(graph.minimumDegree),Dmax(graph.Dmax),m(graph.m),n(graph.n){}; // 用来传递成员给子类，是复制构造函数
+    Graph(std::unordered_set<int> &subVertices, Graph &graph); 
+    Graph() : minimumDegree(0), Dmax(0), m(0), n(0) {}; // 无参、默认构造函数
+    ~Graph() {};
 
     // 2 Greedy算法 每次删点都得到一次result会非常慢
     Graph globalsearch(query_nodes& queryNodes);
     // std::unordered_set<int> globalsearch(query_nodes& queryNodes);
 
-    // 3 batch 算法
-    // 计算两个查询之间的相似度
-    double querySimilarity(const query_nodes& qA, const query_nodes& qB);
-    // 计算两个查询顶点集之间的相似度
-    double groupSimilarity(const query_group& groupA, const query_group& groupB);
-    // 聚类算法
-    std::vector<query_group> Clustering(std::vector<query_nodes>& query_groups, int k, double threshold);
 
     // 辅助函数，固定最后 ------------------------------------
     void readFromFile(const std::string fileName); // 从文件中读取图，逻辑上不允许使用时调用
@@ -64,7 +55,6 @@ public:
     std::unordered_map<int, std::unordered_set<int>>& getAdj() { return adj; }
 
     // 低价值的辅助函数，可删除
-    void printAdj(); // 打印adj
     unsigned int getNumberOfNodes(); // 获取图中节点的数量
     int findMaxDegreeNode(); // 找出度最大的节点，便于测试
     std::unordered_set<int> getNodes(); // 获取图中所有节点

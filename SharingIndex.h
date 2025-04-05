@@ -97,51 +97,76 @@ struct PairHash {
     }
 };
 
+// 3.21 unordered_set
+struct UnorderedSetHash {
+    std::size_t operator()(const std::unordered_set<int>& set) const {
+        std::size_t hash = 0;
+        for (const int& elem : set) {
+            hash ^= std::hash<int>()(elem) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+        }
+        return hash;
+    }
+};
+
+struct UnorderedSetEqual {
+    bool operator()(const std::unordered_set<int>& a, const std::unordered_set<int>& b) const {
+        return a == b;
+    }
+};
 
 class SharingIndex : public TreeIndex {
-    public:
-        // SharingIndex(Graph &graph): TreeIndex(graph), communities(VectorHash{}, VectorEqual{}) {};
-        SharingIndex(Graph &graph): TreeIndex(graph) {};
+public:
+    // 1 构造函数同父类
+    // SharingIndex(Graph &graph): TreeIndex(graph) {};
+    SharingIndex(Graph &graph) : TreeIndex(graph) {};
+    SharingIndex() {}; // 暂时不写，没用
+    ~SharingIndex() {};
 
-        // 1 找到公共子连通分量
-        void getMinPortToQuery(const query_group &group); // 找到最大公共连通分量
-        int findCommonChildren(const query_nodes &components); // 辅助函数，代价较大的方法
+    // 2 batch查找解决CSP
+    void batchsearch(query_group &group, std::string path);
+    bool isConnected(query_nodes queryNodes, std::unordered_map<int, int> degree, std::unordered_set<int> &resultNodes);
+    void searchstep(std::unordered_set<int> &q_, int k_min);
 
-        void getKCoreToQuery(const std::vector<std::vector<int>> &group, Graph &graph, std::string path); // 找到最大K
-        std::unordered_set<int> getLastResult(std::vector<int>& queryNodes, std::unordered_set<int>& result_end, Graph &graph);
+    // 3 与batch相关的 聚类算法，暂时没用到
+    // 计算两个查询之间的相似度
+    double querySimilarity(query_nodes& qA, query_nodes& qB);
+    // 计算两个查询顶点集之间的相似度
+    double groupSimilarity(query_group& groupA, query_group& groupB);
+    // 聚类算法
+    std::vector<query_group> Clustering(query_group& query_groups, double threshold);
+    // CP聚类，目的在于划分不同连通分量（总），但事实上如果一个无向图总是连通的。
+    // 判断的方法，通过找到顶层分量集，比较得到CP(qA,qB)，1为连通，0为不连通
 
-        // 2 构建共享图
-        void getSharingComponents(); // 获得共享图节点
-        // checked 包含虚拟分量-1，可以修改返回值
-        SharingIndex buildSubgraphIndex();  // 构建共享图
 
-        // 3 查找k社区
-        // 从顶层分量开始，查找子分量，并添加顶点到社区中
-        void findCommunities(); // 找到多个社区
 
-        // 添加一个新的公共方法来返回 queryToKcore 的引用
-        // std::unordered_map<query_nodes, std::unordered_set<int>, SetHash, SetEqual>& getQueryToResult() {
-        //     return queryToResult;
-        // }
-    
-    private:
-        std::vector<std::pair<int, query_nodes>> MinPortToQuery; // 最大公共连通分量ID 对应 查询顶点集
-        std::unordered_set<int> subGraph; // 存储共享图节点的容器 共享图的节点是连通分量
-        std::unordered_set<int> topComponents; // 顶层分量
-        std::unordered_set<std::vector<int>, VectorHash, VectorEqual> communities; // 存储社区的容器
-        std::unordered_map<int, std::unordered_set<int>, IntHash, IntEqual> componentToResult; // 连通分量ID 对应 结果集(连通分量ID集)
-        // std::unordered_map<query_nodes, std::unordered_set<int>, SetHash, SetEqual> queryToResult; // 查询顶点集 对应 结果集(顶点集)
-        // std::unordered_map<query_nodes, int, SetHash, SetEqual> queryToKcore; // 查询顶点集 对应 k
+    // 3 辅助函数
+    std::unordered_set<int> getLastResult(std::vector<int>& queryNodes, std::unordered_set<int>& result_end, Graph &graph); // 确保最后的结果连通，没有必要，暂时不用
+    void printAndwrite(std::string path); // 写入文件
+    void printAndwrite_(std::string path); // 写入文件
 
-        // 1.16 修改，不用shell对应顶点集
-        int q_count; // 查询顶点集个数 
-        std::unordered_map<int, std::vector<int>> QueryCode;
-        std::unordered_map<int, std::unordered_set<int>> KCoreToQuery;
-        // std::vector<std::unordered_set<int>> KCoreToQuery; // 结构暂定
-        std::unordered_map<int, std::unordered_set<int>> kToResult; // k 对应 结果集(连通分量ID集)
-        std::unordered_map<int, std::unordered_set<int>> queryToResult; // 查询顶点集code 对应 结果集(顶点集)
-        std::unordered_map<int, int> queryToKcore; // 查询顶点集code 对应 k
+    // 4 batch查找解决MIN_CSP
+    void batchMinsearch(query_group& group); // 返回Graph集合
 
+
+protected:
+//CSP
+    int q_count; // 查询顶点集个数 
+    std::unordered_map<int, query_nodes> QueryCode; // 查询顶点集code 对应 查询顶点集
+    std::unordered_map<int, std::unordered_set<int>> KCoreToQuery; // k 对应 查询顶点集codes
+    std::unordered_map<int, std::unordered_set<int>> kToResult; // k 对应 结果集(连通分量ID集)
+    std::unordered_map<int, std::unordered_set<int>> queryToResult; // 查询顶点集code 对应 结果集(顶点集)
+    std::unordered_map<int, int> queryToKcore; // 查询顶点集code 对应 k
+
+//MIN_CSP
+    int q_count_;
+    std::unordered_map<int, query_nodes> QueryCode_;
+    std::unordered_map<int, int> queryToKcore_;
+    std::unordered_map<int, std::unordered_set<int>> queryToResult_;
+
+    std::vector<double> time;
+    std::vector<double> time_sum;
+    std::vector<bool> flag_;
+    std::vector<int> species;
 
 };
 

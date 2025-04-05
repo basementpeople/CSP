@@ -1,0 +1,3 @@
+TestNumber,QueryNodes,TreeIndexSize,TreeIndexMinDegree,min_size,k,isConnected,time
+0,1 54 ,3371,7,20,7,1,1.557
+1,1 53 ,2667,13,70,13,1,5.155

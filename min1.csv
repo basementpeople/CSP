@@ -1,0 +1,4 @@
+TestNumber,QueryNodes,TreeIndexSize,TreeIndexMinDegree,min_size,k,isConnected
+0,1084 ¡¢785 ¡,3856,3,16,3,1
+1,1722 ¡¢1084 ¡¢785 ¡,3856,3,16,3,1
+2,1117 ¡¢1722 ¡¢1084 ¡¢785 ¡,3856,3,17,3,1

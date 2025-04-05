@@ -7,36 +7,6 @@ Graph::Graph(const std::string path) {
        statistic();
 }
 
-// 这个构造函数的意义
-Graph::Graph() {
-    m = 0;
-    n = 0;
-}
-
-// 深拷贝构造函数，1有没有必要
-Graph::Graph(const Graph &graph) {
-    // 拷贝邻接表
-    adj = graph.adj; // unordered_map 自动进行深拷贝
-
-    // 拷贝节点的度
-    degrees = graph.degrees; // unordered_map 的深拷贝
-
-    // 拷贝有相同度的节点的集合的向量
-    orderedNodes = graph.orderedNodes; // 深拷贝向量和集合
-
-    // 拷贝最小度
-    minimumDegree = graph.minimumDegree;
-
-    // 拷贝最大度
-    Dmax = graph.Dmax;
-
-    // 拷贝图的节点数
-    n = graph.n;
-
-    // 拷贝图的边数
-    m = graph.m;
-}
-
 Graph::Graph(std::unordered_set<int> &subVertices, Graph &graph) {
     m = 0;
     n = 0;
@@ -66,45 +36,8 @@ Graph::Graph(std::unordered_set<int> &subVertices, Graph &graph) {
     statistic();
 }
 
-Graph::~Graph() {}
 
-// 社区节点集合转Graph，有必要， 改成构造函数了，需要将所有此函数替换为Graph（）
-Graph Graph::getGraph(std::unordered_set<int> &subVertices) {
-    // 创建一个新的 Graph 对象
-    Graph subGraph;
 
-    // 添加顶点
-    for (const auto &vertex : subVertices)
-    {
-        if (adj.find(vertex) != adj.end())
-        {
-            subGraph.addNode(vertex);
-        }
-    }
-
-    // 添加边
-    for (const auto &vertex : subVertices)
-    {
-        if (adj.find(vertex) != adj.end())
-        {
-            std::unordered_set<int> neighbors = adj[vertex];
-            for (const auto &neighbor : neighbors)
-            {
-                if (subVertices.find(neighbor) != subVertices.end())
-                {
-                    subGraph.addEdge(vertex, neighbor);
-                }
-            }
-        }
-    }
-    subGraph.m /= 2;
-    // 计算新的 Graph 的度数、最小度数等统计信息
-    subGraph.computeDegrees();
-    // subGraph.computeMinimumDegree();
-    subGraph.statistic();
-
-    return subGraph;
-}
 
 // 2. Greedy算法
 Graph Graph::globalsearch(query_nodes& queryNodes) {
@@ -196,79 +129,6 @@ Graph Graph::globalsearch(query_nodes& queryNodes) {
     clock_t end = clock(); // 记录结束时间
     std::cout << "花费了" << (double)(end - start) / CLOCKS_PER_SEC << "秒" << std::endl;
     return ans;
-}
-
-// 计算两个查询之间的相似度
-double Graph::querySimilarity(const query_nodes& qA, const query_nodes& qB) {
-    // qA的邻居
-    std::unordered_set<int> neighborsA;
-    for (auto &v :qA) {
-        neighborsA.insert(getNeighbors(v).begin(), getNeighbors(v).end());
-    }
-    // qB的邻居
-    std::unordered_set<int> neighborsB;
-    for (auto &v :qB) {
-        neighborsB.insert(getNeighbors(v).begin(), getNeighbors(v).end());
-    }
-    // 计算两个邻居的交集
-    std::unordered_set<int> intersection;
-    std::set_intersection(neighborsA.begin(), neighborsA.end(), neighborsB.begin(), neighborsB.end(), std::inserter(intersection, intersection.begin()));
-    
-    // 计算相似度
-    return intersection.size() / (double)(std::min(qA.size(), qB.size()));
-}
-
-// 计算两个查询顶点集之间的相似度, 1 - 邻居
-double Graph::groupSimilarity(const query_group& groupA, const query_group& groupB) {
-    double totalSimilarity = 0.0;
-    for (const query_nodes& qA : groupA) {
-        for (const query_nodes& qB : groupB) {
-            totalSimilarity += querySimilarity(qA, qB);
-        }
-    }
-    return totalSimilarity / (groupA.size() * groupB.size());
-}
-
-// 聚类算法
-std::vector<query_group> Graph::Clustering(std::vector<query_nodes>& query_groups, int k, double threshold) {
-    std::vector<query_group> groups;
-
-    // 初始化每个查询为一个单独的组
-    for (const query_nodes& q : query_groups) {
-        // HopConstrainedNeighbors hcn = getHopConstrainedNeighbors(q.s, q.t, q.k);
-        query_group group;
-        group.push_back(q);
-        groups.push_back(group);
-    }
-
-    while (groups.size() >= 1) {
-        double maxSimilarity = -1.0;
-        int bestPair[2] = {-1, -1};
-
-        // 找到最相似的两个组
-        for (size_t i = 0; i < groups.size(); ++i) {
-            for (size_t j = i + 1; j < groups.size(); ++j) {
-                double similarity = groupSimilarity(groups[i], groups[j]);
-                if (similarity > maxSimilarity) {
-                    maxSimilarity = similarity;
-                    bestPair[0] = i;
-                    bestPair[1] = j;
-                    // std::cout << maxSimilarity << std::endl;
-                }
-            }
-        }
-        if (maxSimilarity < threshold) {
-            break;
-        }
-        // 合并最相似的两个组
-        groups[bestPair[0]].insert(groups[bestPair[0]].end(), 
-                           std::make_move_iterator(groups[bestPair[1]].begin()), 
-                           std::make_move_iterator(groups[bestPair[1]].end()));
-        groups.erase(groups.begin() + bestPair[1]);
-    }
-
-    return groups;
-
 }
 
 
@@ -370,40 +230,31 @@ bool Graph::isConnected(query_nodes queryNodes, std::unordered_map<int, int> deg
 
     std::unordered_set<int> visited; // 存储已访问的节点
     std::queue<int> q;
-    for (int startNode : queryNodes)
-    {
-        if (degree.find(startNode) != degree.end() && degree.at(startNode) > 0)
-        {
+    for (int startNode : queryNodes) {
+        if (degree.find(startNode) != degree.end() && degree.at(startNode) > 0) {
             q.push(startNode);
             visited.insert(startNode);
             break;
         }
     }
 
-    if (q.empty())
-    {
+    if (q.empty()) {
         return false; // 如果没有有效的起始节点，则直接返回不连通
     }
 
-    while (!q.empty())
-    {
-        // std::cout<<"BFS"<<std::endl;
+    while (!q.empty()) {
         int node = q.front();
         q.pop();
-        for (int neighbor : getNeighbors(node))
-        {
-            if (degree.find(neighbor) != degree.end() && visited.insert(neighbor).second && degree.at(neighbor) > 0)
-            {
+        for (int neighbor : getNeighbors(node)) {
+            if (degree.find(neighbor) != degree.end() && visited.insert(neighbor).second && degree.at(neighbor) > 0) {
                 q.push(neighbor);
             }
         }
     }
 
     // 检查所有查询节点是否都在访问集合中
-    for (int node : queryNodes)
-    {
-        if (visited.find(node) == visited.end())
-        {
+    for (int node : queryNodes) {
+        if (visited.find(node) == visited.end()) {
             return false;
         }
     }
@@ -420,7 +271,8 @@ std::unordered_set<int> Graph::getNeighbors(int node) {
 // 对特定节点的邻居节点进行排序
 std::vector<int> Graph::sortNeighbors(int node) {
     // 获取节点的邻居节点
-    std::unordered_set<int> &neighbors = adj[node];
+    // std::unordered_set<int> &neighbors = adj[node];
+    std::unordered_set<int> neighbors = getAdj()[node];
 
     // 将邻居节点存储到向量中
     std::vector<int> sortedNeighbors(neighbors.begin(), neighbors.end());
@@ -488,22 +340,6 @@ std::unordered_set<int> Graph::getComponent(query_nodes& queryNodes, std::unorde
 
 
 // 低价值的辅助函数，可删除
-// 打印adj
-void Graph::printAdj() {
-    for (const auto& entry : adj)
-    {
-        int vertex = entry.first;
-        const std::unordered_set<int>& neighbors = entry.second;
-
-        std::cout << "Vertex " << vertex << ": ";
-        for (int neighbor : neighbors)
-        {
-            std::cout << neighbor << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
 // 获取图中节点的数量
 unsigned int Graph::getNumberOfNodes() {
     return n;
