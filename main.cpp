@@ -248,7 +248,7 @@ void pro_2_2(Graph& graph, std::string path) {
         allNodes.push_back(pair.first);
     }
 
-    int k = 3; // 随机测试10次
+    int k = 1; // 随机测试10次
     std::ofstream outFile(path);
     if (!outFile.is_open()) {
         std::cerr << "无法打开 results.csv 文件" << std::endl;
@@ -259,7 +259,7 @@ void pro_2_2(Graph& graph, std::string path) {
     outFile << "TestNumber,QueryNodes,TreeIndexSize,TreeIndexMinDegree,min_size,k,isConnected,time\n";
 
     query_group group;
-    std::vector<std::vector<int>> queryNodesii = {{853, 113}};
+    std::vector<std::vector<int>> queryNodesii = {{3079, 3202, 3598}};
     double less = 0;
 
     for (int i = 0; i < k; i++) {
@@ -327,11 +327,11 @@ void pro_2_2(Graph& graph, std::string path) {
                 << (double)(end - start) / CLOCKS_PER_SEC << "\n";
                 less += (double)(end - start) / CLOCKS_PER_SEC;
         
-        std::cout << "re: ";    
-        for (auto node : community) {
-            std::cout << node << " ";
-        }
-        std::cout << std::endl; 
+        // std::cout << "re: ";    
+        // for (auto node : community) {
+        //     std::cout << node << " ";
+        // }
+        // std::cout << std::endl; 
     }
     
     outFile.close();
@@ -416,8 +416,8 @@ int main(int argc, char *argv[])
     Graph graph("D:\\mySecre\\workspace\\csp_old\\CSP\\dataset\\facebook_combined.txt");
 
 
-    // pro_2_2(graph, "tt1.csv");
-    pro_1_2(graph, "single_2.csv");
+    pro_2_2(graph, "tt1.csv");
+    // pro_1_2(graph, "single_2.csv");
     // pro_1_1(graph, "single_1.csv");
 
     // Graph greedySolution = graph.globalsearch(querySet);

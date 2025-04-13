@@ -27,14 +27,12 @@ public:
 // ------------------------------------------------------------------------------check
     // 1 构造函数和析构函数
     TreeIndex(Graph &graph); // 得到的索引不是树结构
-
     TreeIndex() : shell_count(0) {};
     ~TreeIndex() {};
 
     // 2 shell索引解决CSP
     std::unordered_set<int> shellsearch(query_nodes &queryNodes);
     std::unordered_set<int> searchstep(query_nodes &queryNodes, int k);
-    std::unordered_set<int> findKCoreSubgraph(query_nodes& queryNodes, int k=-1); // 不对k做处理，比较粗糙的shell算法
 
     // 3 GreedyConnection算法解决MIN_CSP
     std::unordered_set<int> greedyConnection(query_nodes &queryNodes, int k);
@@ -43,27 +41,16 @@ public:
     query_nodes steinerTree(std::unordered_set<int>& H_min_star, const query_nodes& terminals);
     std::unordered_set<int> greedyStep_simply(query_nodes &queryNodes, int k, std::unordered_set<int>& realnodes);
     
-    // std::unordered_set<int> dw(std::unordered_set<int> &H_min, std::vector<int> &queryNodes);
 
     // 辅助函数，固定最后-----------------------------------
     void computeCoreIndex(); // 计算shell_count，coreIndex，coreMinimumDegree
     void identifyAndStoreComponents(); // 计算layerToComponentToNodes，ComponentToNodes，nodeToComponentId
     void buildParentChildRelationships(); // 计算connectedComponentParent，ComponentParent
     std::unordered_set<int> findTopComponents(query_nodes &queryNodes,int k = 0); // 找到顶层分量，包括多余的顶层分量
-    int findCommenK_2(query_nodes& queryNodes); // 正在使用的找到shell的算法，还有不完善的地方
-    int findCommenK(query_nodes& queryNodes); // 之前的到shell的算法，备份
-    
-    // 特殊的辅助函数，暂时不用
-    int findCommenShell(std::vector<int> queryNodes); // 找到查询顶点集的k值，即最小的shell层
-    int findCommenShell_2(std::vector<int> queryNodes);
-    void dfs(int com_1, int com_2, std::unordered_set<int>& visited, std::unordered_set<int>& result, int depth);
-    void dfs(int com_1, int com_2, std::unordered_set<int>& visited, std::vector<int>& currentPath, std::vector<std::vector<int>>& allPaths);
     
 // ------------------------------------------------------------------------------check
     
     void printComponents() const;
-
-
 
     // 计算节点邻居信息
     void computeNodeNeighbors(Graph &graph);

@@ -112,14 +112,12 @@ std::unordered_set<int> TreeIndex::shellsearch(query_nodes &queryNodes) {
     // 遍历查询节点，确定最小核心索引
     // 这步最重要
     int k = coreMinimumDegree[coreIndex[*queryNodes.begin()]];
-    // if (queryNodes.size() != 1) {
-    //     k = findCommenK_2(queryNodes);
-    // }
     for (auto node : queryNodes) {
         k = std::min(k, coreMinimumDegree[coreIndex[node]]);
     }
 
     std::unordered_set<int> res = searchstep(queryNodes, k);
+    std::cout << "res.size()" << res.size() << std::endl;
 
     while (1) {
         // 检查Q是否连通
@@ -143,6 +141,8 @@ std::unordered_set<int> TreeIndex::shellsearch(query_nodes &queryNodes) {
     }
 
     clock_t end = clock(); // 记录结束时间
+    std::cout << "k" << k << std::endl;
+    std::cout << "res.size()" << res.size() << std::endl;
     std::cout << "此次shellsearch花费了" << (double)(end - start) / CLOCKS_PER_SEC << "秒" << std::endl;
 
     // 返回最终结果
@@ -204,135 +204,6 @@ std::unordered_set<int> TreeIndex::searchstep(query_nodes &queryNodes, int k) {
     return res;
 }
 
-// 不对k做处理，比较粗糙的shell算法
-std::unordered_set<int> TreeIndex::findKCoreSubgraph(query_nodes &queryNodes, int k) {
-    // 初始化最小核心索引为最大整数，以便后续比较
-    int minCoreIndex = INT_MAX;
-
-    // 遍历查询节点，确定最小核心索引
-    for (int node : queryNodes)
-    {
-        // 如果节点不在核心索引中，抛出异常
-        // if (coreIndex.find(node) == coreMinimumDegree.end())
-        if (coreIndex.find(node) == coreIndex.end())
-        {
-            throw std::runtime_error("Error: Node does not exist in core index.");
-        }
-        std::cout << "the coreIndex of node " << node << " is " << coreMinimumDegree[coreIndex[node]]<< std::endl;
-        // 更新最小核心索引
-        minCoreIndex = std::min(minCoreIndex, coreMinimumDegree[coreIndex[node]]);
-    }
-
-    // 找到最大的公共shell，如果这个shell的核心度>=k,不改变k；如果核心度<k，则k=核心度
-    // int k_tmp = findCommenK();
-    // if (k_tmp < k) {
-    //     k = k_tmp;
-    // }
-
-    // 确定k值
-    if (k == -1) {
-    k = minCoreIndex;
-    }
-    std::cout << "the k is : " << k << std::endl;
-    // -------------------------- 以上的解决方案暗含了这样一个定理，即：核心分解后，核心度就是社区k的大小
-    // -------------------------- 但事实上，核心度不一定就是最小度，因为可能会有两个集中的子图被连在一起，但核心度都很高，实际的k值只有2
-
-    // 这里我们增加一个函数，去寻找最大的公共连通分量 1.11 不在这里加
-    // k = getKfromIndex(queryNodes);
-    // std::cout << "the k is : " << k << std::endl;
-     
-    // if (k == -1) {
-    //     k = minCoreIndex;
-    // }
-
-    // 开始计时
-    // auto start = std::chrono::high_resolution_clock::now();
-    // 用于存储所有顶层分量的ID
-    std::unordered_set<int> topComponentIds;
-
-    // 找到所有父分量为-1的顶层分量
-    topComponentIds = findTopComponents(queryNodes, k);
-
-    // 中间计时点
-    // auto mid = std::chrono::high_resolution_clock::now();
-    // 计算中间耗时
-    // auto midduration = std::chrono::duration_cast<std::chrono::milliseconds>(mid - start);
-    // 输出找到父索引所需时间
-    // std::cout << "找到父索引所需时间为 :" << midduration.count() << " 毫秒" << std::endl;
-    // 输出顶层分量的大小
-    // std::cout << "the topComponentIds size is :" << topComponentIds.size() << std::endl;
-
-    // 用于存储最终结果的节点集合
-    std::unordered_set<int> resultNodes;
-    // 用于存储最终结果
-    std::unordered_set<int> res;
-    // 用于广度优先搜索的队列
-    std::queue<int> componentQueue;
-
-    // 将顶层分量的ID加入队列
-    for (int compId : topComponentIds)
-    {
-        componentQueue.push(compId);
-    }
-
-    // 广度优先搜索所有分量
-    while (!componentQueue.empty())
-    {
-        int currentId = componentQueue.front();
-        componentQueue.pop();
-
-        // 如果当前分量已经在结果集中，则跳过
-        if (resultNodes.find(currentId) != resultNodes.end())
-            continue;
-
-        // 将当前分量添加到结果集中
-        resultNodes.insert(currentId);
-
-        // 遍历当前分量的所有子分量
-        for (int childCompId : ComponentChildren[currentId])
-        {
-            // 1.10 目的在于获得最小社区
-            // if (visitedComponents.find(childCompId) != visitedComponents.end()) {
-
-            // 获取子分量中的一个节点
-            int childNode;
-            for (int node : ComponentToNodes[childCompId])
-            {
-                childNode = node;
-                break;
-            }
-
-            // 如果子分量的节点的核心度大于等于k，将子分量加入队列
-            if (coreMinimumDegree[coreIndex[childNode]] >= k)
-            {
-                componentQueue.push(childCompId);
-            }
-
-            // }
-
-        }
-    }
-
-    // 将结果集中的所有连通分量的点添加到最终结果中
-    for (int compId : resultNodes)
-    {
-        for (int node : ComponentToNodes[compId])
-        {
-            res.insert(node);
-        }
-    }
-
-    // 结束计时
-    // auto end = std::chrono::high_resolution_clock::now();
-    // 计算找到子索引所需时间
-    // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - mid);
-    // 输出找到子索引所需时间
-    //std::cout << "找到子索引所需时间为 : " << duration.count() << " 毫秒" << std::endl;
-
-    // 返回最终结果
-    return res;
-}
-
 // 3 GreedyConnection算法解决MIN_CSP 
 std::unordered_set<int> TreeIndex::greedyConnection(query_nodes& queryNodes, int k) {
     clock_t start = clock(); // 记录结束时间
@@ -344,7 +215,7 @@ std::unordered_set<int> TreeIndex::greedyConnection(query_nodes& queryNodes, int
     // Step 2: Connection Step
     std::unordered_set<int> result = connectionStep(H_min_star, queryNodes, k);
     std::cout << "result的结果大小：" << result.size() << std::endl;
-    // std::unordered_set<int> result = H_min_star;
+
     clock_t end = clock(); // 记录结束时间
     std::cout << "此次greedyConnection花费了" << (double)(end - start) / CLOCKS_PER_SEC << "秒" << std::endl;
     return result;
@@ -417,11 +288,6 @@ std::unordered_set<int> TreeIndex::greedyStep(query_nodes& queryNodes, int k) {
                 for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
                     if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
                         int neighbor_degree = 0;
-                        // for (int nn : Graph::getNeighbors(neighbor_neighbor)) {
-                        //     if (H_min_star.find(nn) != H_min_star.end()) {
-                        //         neighbor_degree++;
-                        //     }
-                        // }
                         neighbor_degree = min_degree[neighbor_neighbor];
                         if (neighbor_degree < k) {
                             degree_gain++;
@@ -469,9 +335,6 @@ std::unordered_set<int> TreeIndex::greedyStep(query_nodes& queryNodes, int k) {
         }
 
         H_min_star.insert(node);
-        // if (connection_score == 1) {
-        //     std::cout << "charu: " << node << "  " << connection_score << "  " << degree_gain << "  " << degree_penalty << std::endl;
-        // }
 
         visited.insert(node);
         min_degree[node] = 0;
@@ -494,12 +357,7 @@ std::unordered_set<int> TreeIndex::greedyStep(query_nodes& queryNodes, int k) {
 
         // 判断是否跳出循环
         int count = n - uf.getSetNum() + 1;
-        // std::cout << "count: " << count << "         ";
-        // std::cout << "H_min_star.size(): " << H_min_star.size() << std::endl;
-        // std::cout << "mu_star: " << mu_star << "         ";
-        // std::cout << "k: " << k << std::endl;
-        if (H_min_star.size() == count && mu_star >= k) {
-        // if (H_min_star.size() == count) {    
+        if (H_min_star.size() == count && mu_star >= k) {   
             break;
         }
 
@@ -513,7 +371,6 @@ std::unordered_set<int> TreeIndex::greedyStep(query_nodes& queryNodes, int k) {
                     for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
                         if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
                             components.insert(uf.find(neighbor_neighbor));
-                            // std::cout << "uf: " << uf.find(neighbor_neighbor) << std::endl;
                         }
                     }
                     int connection_score = components.size() - 1;
@@ -531,11 +388,6 @@ std::unordered_set<int> TreeIndex::greedyStep(query_nodes& queryNodes, int k) {
                     for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
                         if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
                             int neighbor_degree = 0;
-                            // for (int nn : Graph::getNeighbors(neighbor_neighbor)) {
-                            //     if (H_min_star.find(nn) != H_min_star.end()) {
-                            //         neighbor_degree++;
-                            //     }
-                            // }
                             neighbor_degree = min_degree[neighbor_neighbor];
                             if (neighbor_degree < k) {
                                 degree_gain++;
@@ -569,6 +421,261 @@ std::unordered_set<int> TreeIndex::connectionStep(std::unordered_set<int>& H_min
     
 }
 
+std::unordered_set<int> TreeIndex::greedyStep_simply(query_nodes& queryNodes, int k, std::unordered_set<int>& realnodes) {
+    std::unordered_set<int> H_min_star(queryNodes.begin(), queryNodes.end());
+    std::unordered_set<int> visited;
+    std::vector<int> sorted_vec(H_min_star.begin(), H_min_star.end());
+    std::sort(sorted_vec.begin(), sorted_vec.end());
+
+    // 定义优先队列
+    std::priority_queue<Item, std::vector<Item>, CompareItem> pq;
+    std::unordered_map<int, std::tuple<int, int, int>> pq_sustain; // 维护优先队列
+    std::unordered_map<int, int> min_degree;
+
+    // 初始化
+    for (int node : sorted_vec) {
+        // pq.push({{0, 0}, node}); // 初始优先级为 (0, 0)
+        visited.insert(node);
+        min_degree[node] = 0;
+    }
+    for (int i = 0; i < n; i++) {
+        pq_sustain[i] = {0, 0, 0};
+    }
+
+    // 最小度数 mu_star
+    int mu_star = INT8_MAX;
+
+    // 初始化并查集
+    UnionFind uf(n);
+
+    // 将查询节点加入并查集 计算当前最小度数 mu_star 维护度数列表
+    for (int node : sorted_vec) {
+        uf.find(node); // 确保查询节点在并查集中
+        // 更新并查集
+        for (int neighbor : Graph::getNeighbors(node)) {
+            if (H_min_star.find(neighbor) != H_min_star.end()) {
+                uf.unite(node, neighbor);
+                min_degree[node]++;
+            }
+        }
+        mu_star = std::min(mu_star, min_degree[node]);
+    }
+
+    for (int node : sorted_vec) {
+        // 遍历当前节点的邻居
+        for (int neighbor : Graph::getNeighbors(node)) {
+            if (realnodes.find(neighbor) != realnodes.end()) {
+                // 计算连接分数 p'(u)
+                std::unordered_set<int> components;
+                for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
+                    if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
+                        components.insert(uf.find(neighbor_neighbor));
+                    }
+                }
+                int connection_score = components.size() - 1;  //max(0,x)
+                connection_score = std::max(0, connection_score);
+
+                connection_score = INT32_MAX;
+
+                // 计算最小度数分数 p''(u)
+                int degree = 0;  // 当前节点的度数
+                for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
+                    if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
+                        degree++;
+                    }
+                }
+
+                // 增益效应：统计当前节点的邻居中，哪些邻居的加入可以使当前节点的度数更接近 k
+                int degree_gain = 0;
+                for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
+                    if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
+                        int neighbor_degree = 0;
+                        neighbor_degree = min_degree[neighbor_neighbor];
+                        if (neighbor_degree < k) {
+                            degree_gain++;
+                        }
+                    }
+                }
+
+                // 惩罚效应：计算当前节点需要多少额外的邻居才能达到目标最小度数 k
+                int degree_penalty = std::max(0, k - degree);
+                // degree_penalty = degree_penalty / 2;
+
+                // 最小度数分数 p''(u) = 增益效应 - 惩罚效应
+                int degree_score = std::max(0, degree_gain - degree_penalty);
+
+                // 综合分数 p(u) = (p'(u), p''(u))
+                pq.push({{connection_score, degree_gain, degree_penalty}, neighbor});
+                pq_sustain[neighbor] = {connection_score, degree_gain, degree_penalty};
+            } 
+        }
+    }
+
+    while (!pq.empty()) {
+
+        auto top = pq.top();
+        pq.pop();
+        int node = top.value;
+
+        // 跳过已经访问过的节点
+        if (visited.find(node) != visited.end()) {
+            continue;
+        }
+        if (getCoreIndex(node) < k) {
+            visited.insert(node);
+            continue;
+        }
+
+        int connection_score = std::get<0>(top.priority);
+        int degree_gain = std::get<1>(top.priority);
+        int degree_penalty = std::get<2>(top.priority);
+
+        // 避免重复
+        if (std::get<0>(pq_sustain[node]) != connection_score || 
+            std::get<1>(pq_sustain[node]) != degree_gain ||
+            std::get<2>(pq_sustain[node]) != degree_penalty ) {
+            continue;
+        }
+
+        H_min_star.insert(node);
+        if (connection_score == 1) {
+            std::cout << "charu: " << node << "  " << connection_score << "  " << degree_gain << "  " << degree_penalty << std::endl;
+        }
+
+        visited.insert(node);
+        min_degree[node] = 0;
+
+        // 更新并查集 维护度数列表
+        std::vector<int> tmp;
+        tmp.push_back(node);
+        for (int neighbor : Graph::getNeighbors(node)) {
+            if (realnodes.find(neighbor) != realnodes.end()) {
+                if (H_min_star.find(neighbor) != H_min_star.end()) {
+                    uf.unite(node, neighbor);
+                    min_degree[node]++;
+                    min_degree[neighbor]++;
+                    tmp.push_back(neighbor);
+                }
+            }
+        }
+        mu_star = INT8_MAX;
+        for (auto& x : H_min_star) {
+            mu_star = std::min(mu_star, min_degree[x]);
+        }
+
+        // 判断是否跳出循环
+        int count = n - uf.getSetNum() + 1;
+        if (H_min_star.size() == count && mu_star >= k) {
+            return H_min_star;
+        }
+
+        // 遍历当前节点的邻居 以及必要节点的邻居
+        for (auto& node : tmp) {
+            for (int neighbor : Graph::getNeighbors(node)) {
+                if (realnodes.find(neighbor) != realnodes.end()) {
+                    if (visited.find(neighbor) == visited.end()) {
+    
+                        // 计算连接分数 p'(u)
+                        std::unordered_set<int> components;
+                        for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
+                            if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
+                                components.insert(uf.find(neighbor_neighbor));
+                            }
+                        }
+                        int connection_score = components.size() - 1;
+                        connection_score = INT32_MAX;
+        
+                        // 计算最小度数分数 p''(u)
+                        int degree = 0;  // 当前节点的度数
+                        for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
+                            if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
+                                degree++;
+                            }
+                        }
+        
+                        // 增益效应：统计当前节点的邻居中，哪些邻居的加入可以使当前节点的度数更接近 k
+                        int degree_gain = 0;
+                        for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
+                            if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
+                                int neighbor_degree = 0;
+                                neighbor_degree = min_degree[neighbor_neighbor];
+                                if (neighbor_degree < k) {
+                                    degree_gain++;
+                                }
+                            }
+                        }
+        
+                        // 惩罚效应：计算当前节点需要多少额外的邻居才能达到目标最小度数 k
+                        int degree_penalty = std::max(0, k - degree);
+                        // degree_penalty = degree_penalty / 2;
+                        // std::cout << "degree_gain: " << degree_gain << std::endl;
+                        // std::cout << "degree_penalty: " << degree_penalty << std::endl;
+        
+                        // 最小度数分数 p''(u) = 增益效应 - 惩罚效应
+                        int degree_score = std::max(0, degree_gain - degree_penalty);
+        
+                        // 综合分数 p(u) = (p'(u), p''(u))
+                        pq.push({{connection_score, degree_gain, degree_penalty}, neighbor});
+                        pq_sustain[neighbor] = {connection_score, degree_gain, degree_penalty};
+                    }
+                }
+            }
+            
+        }
+    }
+    
+    return std::unordered_set<int>();
+}
+
+// 斯坦纳树的近似算法，prim
+query_nodes TreeIndex::steinerTree(std::unordered_set<int>& H_min_star, const query_nodes& terminals) {
+    // 图的节点数 如果 int n = n  n就会变成0
+    std::vector<bool> isTerminal(n, false); // 标记是否为终端节点
+    for (int v : terminals) isTerminal[v] = true;
+
+    // 最小生成树（MST）的 Prim 算法
+    std::vector<int> mstParent(n, -1); // MST 中的父节点
+    std::vector<bool> inMST(n, false); // 标记是否在 MST 中
+    std::vector<int> key(n, INT_MAX); // 每个节点的键值（最小边权重）
+    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<>> pq; // 优先队列
+
+    // 从任意一个终端节点开始
+    pq.push({0, *terminals.begin()});
+    key[*terminals.begin()] = 0;
+
+    while (!pq.empty()) {
+        int u = pq.top().second; // 当前节点
+        pq.pop();
+
+        if (inMST[u]) continue; // 如果已经在 MST 中，跳过
+        inMST[u] = true;
+
+        // 遍历当前节点的所有邻居
+        for (int v : Graph::getNeighbors(u)) {
+            if (H_min_star.find(v) != H_min_star.end()) {
+                if (!inMST[v] && key[v] > 1) { // 权重为1（无权图）
+                    key[v] = 1; // 更新键值
+                    pq.push({key[v], v}); // 将邻居加入优先队列
+                    mstParent[v] = u; // 设置父节点
+                }
+            }
+        }
+    }
+
+    // 提取包含终端节点的子树
+    std::vector<int> steinerTree;
+    for (int v : terminals) {
+        while (v != -1) { // 从终端节点向上追溯到根
+            steinerTree.push_back(v);
+            v = mstParent[v];
+        }
+    }
+    // sort(steinerTree.begin(), steinerTree.end()); // 排序
+    // steinerTree.erase(unique(steinerTree.begin(), steinerTree.end()), steinerTree.end()); // 去重
+    std::unordered_set<int> steinerTree_(steinerTree.begin(), steinerTree.end());
+    return steinerTree_;
+}
+
 // ------------------
 
 void TreeIndex::printComponents() const {
@@ -594,76 +701,6 @@ std::unordered_set<int> TreeIndex::getChildShell(int shell) {
 
 std::unordered_set<int> TreeIndex::getParentShell(int shell) {
     return ComponentParent[shell];
-}
-
-// 
-int TreeIndex::findCommenK(query_nodes& queryNodes) {
-    int componentID = -1;
-    std::unordered_map<int, query_nodes> connectShell;
-
-    // 遍历每个顶点对应连通分量的所有子分量
-    for (auto& p : queryNodes) {
-        std::queue<int> que;
-        std::unordered_set<int> visited;
-        que.push(nodeToComponentId[p]);
-        visited.insert(nodeToComponentId[p]);
-
-        while (!que.empty()) {
-            componentID = que.front();
-            que.pop();
-
-            connectShell[p].insert(componentID);
-            for (auto &childrenSet: getChildShell(componentID)) {
-                if (visited.find(childrenSet) == visited.end() && childrenSet!= -1) { // 防止耗时过长
-                    visited.insert(childrenSet);
-                    que.push(childrenSet);
-                }
-            }
-        }
-
-        que.push(nodeToComponentId[p]);
-        while (!que.empty()) {
-            componentID = que.front();
-            que.pop();
-
-            connectShell[p].insert(componentID);
-            for (auto &parentSet: getParentShell(componentID)) {
-                if (visited.find(parentSet) == visited.end() && parentSet!= -1) { // 防止耗时过长
-                    visited.insert(parentSet);
-                    que.push(parentSet);
-                }
-            }
-        }
-
-    }
-
-    // 找到chilren中所有元素的并集
-    query_nodes result;  // 并集
-    std::unordered_multiset<int> countSum;
-    for (auto& node : connectShell) {
-        countSum.insert(node.second.begin(), node.second.end());
-        result.insert(node.second.begin(), node.second.end());
-    }
-
-    // 找到result中元素个数等于query.size()的元素
-    int minSize = queryNodes.size();
-    for (auto& c : result) {
-        if (countSum.count(c) != minSize) {
-            result.erase(c);
-        }
-    }
-
-    // 找到result中核心度最高的元素
-    int maxK = -1;
-    for (auto& c : result) {
-        int tmp = coreMinimumDegree[coreIndex[*ComponentToNodes[c].begin()]];
-        if (tmp > maxK) {
-            maxK = tmp;
-            // std::cout << "maxK: " << maxK << std::endl;
-        }
-    }
-
-    return maxK;
 }
 
 void TreeIndex::findSubShells(int node, int wander) {
@@ -1062,9 +1099,6 @@ void TreeIndex::printCoreIndex() {
 }
 
 
-
-
-
 // 获得连通分量对应的核心度
 int TreeIndex::getCoreFromComponent(int componentId) {
     for (const auto &level : connectedComponentNodes) {
@@ -1076,284 +1110,6 @@ int TreeIndex::getCoreFromComponent(int componentId) {
     }
     // 如果没有找到对应的连通分量，返回-1或抛出异常
     return -1; // 表示未找到
-}
-
-std::unordered_set<int> TreeIndex::greedyStep_simply(query_nodes& queryNodes, int k, std::unordered_set<int>& realnodes) {
-    std::unordered_set<int> H_min_star(queryNodes.begin(), queryNodes.end());
-    std::unordered_set<int> visited;
-    std::vector<int> sorted_vec(H_min_star.begin(), H_min_star.end());
-    std::sort(sorted_vec.begin(), sorted_vec.end());
-
-    // 定义优先队列
-    std::priority_queue<Item, std::vector<Item>, CompareItem> pq;
-    std::unordered_map<int, std::tuple<int, int, int>> pq_sustain; // 维护优先队列
-    std::unordered_map<int, int> min_degree;
-
-    // 初始化
-    for (int node : sorted_vec) {
-        // pq.push({{0, 0}, node}); // 初始优先级为 (0, 0)
-        visited.insert(node);
-        min_degree[node] = 0;
-    }
-    for (int i = 0; i < n; i++) {
-        pq_sustain[i] = {0, 0, 0};
-    }
-
-    // 最小度数 mu_star
-    int mu_star = INT8_MAX;
-
-    // 初始化并查集
-    UnionFind uf(n);
-
-    // 将查询节点加入并查集 计算当前最小度数 mu_star 维护度数列表
-    for (int node : sorted_vec) {
-        uf.find(node); // 确保查询节点在并查集中
-        // 更新并查集
-        for (int neighbor : Graph::getNeighbors(node)) {
-            if (H_min_star.find(neighbor) != H_min_star.end()) {
-                uf.unite(node, neighbor);
-                min_degree[node]++;
-            }
-        }
-        mu_star = std::min(mu_star, min_degree[node]);
-        // std::cout << node << "------------uf.find(node)----------: " << uf.find(node) << std::endl;
-        // std::cout << "最小度----------: " << mu_star << std::endl;
-    }
-
-    for (int node : sorted_vec) {
-        // 遍历当前节点的邻居
-        for (int neighbor : Graph::getNeighbors(node)) {
-            if (realnodes.find(neighbor) != realnodes.end()) {
-                // 计算连接分数 p'(u)
-                std::unordered_set<int> components;
-                for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
-                    if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
-                        components.insert(uf.find(neighbor_neighbor));
-                    }
-                }
-                int connection_score = components.size() - 1;  //max(0,x)
-                connection_score = std::max(0, connection_score);
-
-                connection_score = INT32_MAX;
-
-                // 计算最小度数分数 p''(u)
-                int degree = 0;  // 当前节点的度数
-                for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
-                    if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
-                        degree++;
-                    }
-                }
-
-                // 增益效应：统计当前节点的邻居中，哪些邻居的加入可以使当前节点的度数更接近 k
-                int degree_gain = 0;
-                for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
-                    if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
-                        int neighbor_degree = 0;
-                        // for (int nn : Graph::getNeighbors(neighbor_neighbor)) {
-                        //     if (H_min_star.find(nn) != H_min_star.end()) {
-                        //         neighbor_degree++;
-                        //     }
-                        // }
-                        neighbor_degree = min_degree[neighbor_neighbor];
-                        if (neighbor_degree < k) {
-                            degree_gain++;
-                        }
-                    }
-                }
-
-                // 惩罚效应：计算当前节点需要多少额外的邻居才能达到目标最小度数 k
-                int degree_penalty = std::max(0, k - degree);
-                // degree_penalty = degree_penalty / 2;
-
-                // 最小度数分数 p''(u) = 增益效应 - 惩罚效应
-                int degree_score = std::max(0, degree_gain - degree_penalty);
-
-                // 综合分数 p(u) = (p'(u), p''(u))
-                pq.push({{connection_score, degree_gain, degree_penalty}, neighbor});
-                pq_sustain[neighbor] = {connection_score, degree_gain, degree_penalty};
-            } 
-        }
-    }
-
-    while (!pq.empty()) {
-
-        auto top = pq.top();
-        pq.pop();
-        int node = top.value;
-
-        // 跳过已经访问过的节点
-        if (visited.find(node) != visited.end()) {
-            continue;
-        }
-        if (getCoreIndex(node) < k) {
-            visited.insert(node);
-            continue;
-        }
-
-        int connection_score = std::get<0>(top.priority);
-        int degree_gain = std::get<1>(top.priority);
-        int degree_penalty = std::get<2>(top.priority);
-
-        // 避免重复
-        if (std::get<0>(pq_sustain[node]) != connection_score || 
-            std::get<1>(pq_sustain[node]) != degree_gain ||
-            std::get<2>(pq_sustain[node]) != degree_penalty ) {
-            continue;
-        }
-
-        H_min_star.insert(node);
-        if (connection_score == 1) {
-            std::cout << "charu: " << node << "  " << connection_score << "  " << degree_gain << "  " << degree_penalty << std::endl;
-        }
-
-        visited.insert(node);
-        min_degree[node] = 0;
-
-        // 更新并查集 维护度数列表
-        std::vector<int> tmp;
-        tmp.push_back(node);
-        for (int neighbor : Graph::getNeighbors(node)) {
-            if (realnodes.find(neighbor) != realnodes.end()) {
-                if (H_min_star.find(neighbor) != H_min_star.end()) {
-                    uf.unite(node, neighbor);
-                    min_degree[node]++;
-                    min_degree[neighbor]++;
-                    tmp.push_back(neighbor);
-                }
-                // std::cout << neighbor << "  min_degree[neighbor]: " << min_degree[neighbor] << std::endl;
-            }
-        }
-        // std::cout << node << "  min_degree[node]: " << min_degree[node] << std::endl;
-        mu_star = INT8_MAX;
-        for (auto& x : H_min_star) {
-            mu_star = std::min(mu_star, min_degree[x]);
-        }
-
-        // 判断是否跳出循环
-        int count = n - uf.getSetNum() + 1;
-        // std::cout << "count: " << count << "         ";
-        // std::cout << "H_min_star.size(): " << H_min_star.size() << std::endl;
-        // std::cout << "mu_star: " << mu_star << "         ";
-        // std::cout << "k: " << k << std::endl;
-        if (H_min_star.size() == count && mu_star >= k) {
-        // if (H_min_star.size() == count) {    
-            // break;
-            return H_min_star;
-        }
-
-        // 遍历当前节点的邻居 以及必要节点的邻居
-        for (auto& node : tmp) {
-            for (int neighbor : Graph::getNeighbors(node)) {
-                if (realnodes.find(neighbor) != realnodes.end()) {
-                    if (visited.find(neighbor) == visited.end()) {
-    
-                        // 计算连接分数 p'(u)
-                        std::unordered_set<int> components;
-                        for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
-                            if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
-                                components.insert(uf.find(neighbor_neighbor));
-                                // std::cout << "uf: " << uf.find(neighbor_neighbor) << std::endl;
-                            }
-                        }
-                        int connection_score = components.size() - 1;
-                        connection_score = INT32_MAX;
-        
-                        // 计算最小度数分数 p''(u)
-                        int degree = 0;  // 当前节点的度数
-                        for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
-                            if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
-                                degree++;
-                            }
-                        }
-        
-                        // 增益效应：统计当前节点的邻居中，哪些邻居的加入可以使当前节点的度数更接近 k
-                        int degree_gain = 0;
-                        for (int neighbor_neighbor : Graph::getNeighbors(neighbor)) {
-                            if (H_min_star.find(neighbor_neighbor) != H_min_star.end()) {
-                                int neighbor_degree = 0;
-                                // for (int nn : Graph::getNeighbors(neighbor_neighbor)) {
-                                //     if (H_min_star.find(nn) != H_min_star.end()) {
-                                //         neighbor_degree++;
-                                //     }
-                                // }
-                                neighbor_degree = min_degree[neighbor_neighbor];
-                                if (neighbor_degree < k) {
-                                    degree_gain++;
-                                }
-                            }
-                        }
-        
-                        // 惩罚效应：计算当前节点需要多少额外的邻居才能达到目标最小度数 k
-                        int degree_penalty = std::max(0, k - degree);
-                        // degree_penalty = degree_penalty / 2;
-                        // std::cout << "degree_gain: " << degree_gain << std::endl;
-                        // std::cout << "degree_penalty: " << degree_penalty << std::endl;
-        
-                        // 最小度数分数 p''(u) = 增益效应 - 惩罚效应
-                        int degree_score = std::max(0, degree_gain - degree_penalty);
-                        // std::cout << "degree_score: " << degree_score << std::endl;
-        
-                        // 综合分数 p(u) = (p'(u), p''(u))
-                        pq.push({{connection_score, degree_gain, degree_penalty}, neighbor});
-                        pq_sustain[neighbor] = {connection_score, degree_gain, degree_penalty};
-                    }
-                }
-            }
-            
-        }
-    }
-
-    // return H_min_star;
-    return std::unordered_set<int>();
-}
-
-// 斯坦纳树的近似算法，prim
-query_nodes TreeIndex::steinerTree(std::unordered_set<int>& H_min_star, const query_nodes& terminals) {
-    // 图的节点数 如果 int n = n  n就会变成0
-    std::vector<bool> isTerminal(n, false); // 标记是否为终端节点
-    for (int v : terminals) isTerminal[v] = true;
-
-    // 最小生成树（MST）的 Prim 算法
-    std::vector<int> mstParent(n, -1); // MST 中的父节点
-    std::vector<bool> inMST(n, false); // 标记是否在 MST 中
-    std::vector<int> key(n, INT_MAX); // 每个节点的键值（最小边权重）
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<>> pq; // 优先队列
-
-    // 从任意一个终端节点开始
-    pq.push({0, *terminals.begin()});
-    key[*terminals.begin()] = 0;
-
-    while (!pq.empty()) {
-        int u = pq.top().second; // 当前节点
-        pq.pop();
-
-        if (inMST[u]) continue; // 如果已经在 MST 中，跳过
-        inMST[u] = true;
-
-        // 遍历当前节点的所有邻居
-        for (int v : Graph::getNeighbors(u)) {
-            if (H_min_star.find(v) != H_min_star.end()) {
-                if (!inMST[v] && key[v] > 1) { // 权重为1（无权图）
-                    key[v] = 1; // 更新键值
-                    pq.push({key[v], v}); // 将邻居加入优先队列
-                    mstParent[v] = u; // 设置父节点
-                }
-            }
-        }
-    }
-
-    // 提取包含终端节点的子树
-    std::vector<int> steinerTree;
-    for (int v : terminals) {
-        while (v != -1) { // 从终端节点向上追溯到根
-            steinerTree.push_back(v);
-            v = mstParent[v];
-        }
-    }
-    // sort(steinerTree.begin(), steinerTree.end()); // 排序
-    // steinerTree.erase(unique(steinerTree.begin(), steinerTree.end()), steinerTree.end()); // 去重
-    std::unordered_set<int> steinerTree_(steinerTree.begin(), steinerTree.end());
-    return steinerTree_;
 }
 
 
@@ -1555,279 +1311,4 @@ std::unordered_set<int> TreeIndex::findTopComponents(query_nodes &queryNodes, in
     }
 
     return topComponents;
-}
-
-// 正在使用的找到shell的算法，还有不完善的地方
-int TreeIndex::findCommenK_2(query_nodes& queryNodes) {
-    int componentID = -1;
-    std::unordered_map<int, query_nodes> connectShell;
-
-    // 遍历每个顶点对应连通分量的所有子分量
-    for (auto& p : queryNodes) {
-        std::queue<int> que;
-        std::unordered_set<int> visited;
-        que.push(nodeToComponentId[p]);
-        visited.insert(nodeToComponentId[p]);
-
-        while (!que.empty()) {
-            componentID = que.front();
-            que.pop();
-
-            connectShell[p].insert(componentID);
-            for (auto &childrenSet: getChildShell(componentID)) {
-                if (visited.find(childrenSet) == visited.end() && childrenSet!= -1) { // 防止耗时过长
-                    visited.insert(childrenSet);
-                    que.push(childrenSet);
-                }
-            }
-        }
-
-        que.push(nodeToComponentId[p]);
-        while (!que.empty()) {
-            componentID = que.front();
-            que.pop();
-
-            connectShell[p].insert(componentID);
-            for (auto &parentSet: getParentShell(componentID)) {
-                if (visited.find(parentSet) == visited.end() && parentSet!= -1) { // 防止耗时过长
-                    visited.insert(parentSet);
-                    que.push(parentSet);
-                }
-            }
-        }
-
-    }
-
-    // 找到chilren中所有元素的并集
-    query_nodes result;  // 并集
-    std::unordered_multiset<int> countSum;
-    for (auto& node : connectShell) {
-        countSum.insert(node.second.begin(), node.second.end());
-        result.insert(node.second.begin(), node.second.end());
-    }
-
-    // 找到result中元素个数等于query.size()的元素
-    int minSize = queryNodes.size();
-    for (auto& c : result) {
-        if (countSum.count(c) != minSize) {
-            result.erase(c);
-        }
-    }
-
-    query_nodes result_;
-    for (auto & node : result) {
-        for (auto & x : ComponentToNodes[node]) {
-            result_.insert(x);
-        }
-    }
-    // for (auto & node : adj) {
-    //     result_.insert(node.first);
-    // }
-
-    int maxK = INT32_MAX;
-    query_nodes r1 = steinerTree(result_, queryNodes);
-    for (auto & node : r1) {
-        int tmp = coreMinimumDegree[coreIndex[node]];
-        if (tmp < maxK) {
-            maxK = tmp;
-        }
-    }
-
-    return maxK;
-}
-
-
-
-
-// ------------------------------------------------------------------
-// 两个方法
-// 找到查询顶点集的k值，即最小的shell层
-int TreeIndex::findCommenShell(std::vector<int> queryNodes) {
-
-    // dfs
-    std::stack<int> line;
-
-    int next_end = -1;
-    int k_ans = INT32_MAX;
-    int k_end = 0;
-    for (int i = 0; i < queryNodes.size()-1; i++) {
-        std::unordered_set<int> visited;
-        std::vector<int> tree;
-
-        std::cout << "cishi：" << i << std::endl;
-        if (next_end == -1) {
-            line.push(nodeToComponentId[queryNodes[0]]);
-            visited.insert(nodeToComponentId[queryNodes[0]]);
-        } else {
-            line.push(next_end);
-            visited.insert(next_end);
-        }
-        int need = nodeToComponentId[queryNodes[i+1]];
-
-        int next = need;
-        int k = INT32_MAX;
-
-        while (!line.empty()) {
-            int tmp = line.top();
-            line.pop();
-            tree.push_back(tmp);
-
-            // for (auto node : ComponentToNodes[tmp]) {
-            //     if (k > coreMinimumDegree[coreIndex[node]]) {
-            //         k = coreMinimumDegree[coreIndex[node]];
-            //         next = tmp;
-            //     }
-            //     break;
-            // }
-    
-            if (tmp == need) {
-                std::cout << "============：" << k << std::endl;
-                for (auto node : tree) {
-                    // 如果最小核心度大于k
-                    if (coreMinimumDegree[coreIndex[*ComponentToNodes[node].begin()]] > k) {
-                        k = coreMinimumDegree[coreIndex[*ComponentToNodes[node].begin()]];
-                        next = node;
-                    }
-                }
-                if (k_end < k) {
-                    k_end = k;
-                    next_end = next;
-                }
-            }
-            
-            bool flag_1 = false, flag_2 = false;
-            for (auto node : getChildShell(tmp)) {
-                if (visited.find(node) == visited.end()) {
-                    line.push(node);
-                    visited.insert(node);
-                    flag_1 = true;
-                }
-            }
-            for (auto node : getParentShell(tmp)) {
-                if (visited.find(node) == visited.end()) {
-                    line.push(node);
-                    visited.insert(node);
-                    flag_2 = true;
-                }
-            }
-            // 刷新k
-            if (!flag_1 && !flag_2) {
-                std::cout << "刷新！！！！！！！！！" <<std::endl;
-                int k = INT32_MAX;
-                tree.pop_back();
-            }
-
-        }
-        k_ans = std::min(k_ans, k_end);
-    }
-
-    return k_ans;
-}
-
-// 我们先默认第一次找到的结果就是最好的
-void TreeIndex::dfs(int com_1, int com_2, std::unordered_set<int>& visited, std::unordered_set<int>& result, int depth = 0) {
-    if (depth > 1000) { // 限制递归深度
-        std::cerr << "Depth limit exceeded" << std::endl;
-        return;
-    }
-
-    std::cerr << "Visiting node " << com_1 << " at depth " << depth << std::endl;
-    // std::cout << "调用dfs" << std::endl;
-    if (com_1 == com_2) {
-        std::cout << "jieshu" << std::endl;
-        result = visited;
-        return ;
-    }
-
-    // 先看父节点
-    for (auto node : getParentShell(com_1)) {
-        if (visited.find(node) == visited.end() && node != -1) {
-            visited.insert(node);
-            dfs(node, com_2, visited, result, depth+1);
-            visited.erase(node);
-        }
-    }
-
-    for (auto node : getChildShell(com_1)) {
-        if (visited.find(node) == visited.end() && node != -1) {
-            visited.insert(node);
-            dfs(node, com_2, visited, result, depth+1);
-            visited.erase(node);
-        }
-    }
-}
-
-// 深搜找最小的shell，但一直没结果
-void TreeIndex::dfs(int com_1, int com_2, std::unordered_set<int>& visited, std::vector<int>& currentPath, std::vector<std::vector<int>>& allPaths) {
-    if (visited.find(com_1) != visited.end()) {
-        return; // 检测到环路，终止搜索
-    }
-
-    visited.insert(com_1);
-    currentPath.push_back(com_1);
-
-    if (com_1 == com_2) {
-        allPaths.push_back(currentPath); // 找到一条路径，存储起来
-        currentPath.pop_back(); // 回溯，移除当前节点
-        visited.erase(com_1); // 回溯，移除当前节点
-        return; // 从当前路径回退，继续搜索其他路径
-    }
-
-    for (auto node : getParentShell(com_1)) {
-        if (visited.find(node) == visited.end()) {
-            dfs(node, com_2, visited, currentPath, allPaths);
-        }
-    }
-
-    for (auto node : getChildShell(com_1)) {
-        if (visited.find(node) == visited.end()) {
-            dfs(node, com_2, visited, currentPath, allPaths);
-        }
-    }
-
-    visited.erase(com_1); // 回溯
-    currentPath.pop_back(); // 回溯
-}
-
-int TreeIndex::findCommenShell_2(std::vector<int> queryNodes) {
-    int k = INT32_MAX;
-    int next = nodeToComponentId[queryNodes[0]];
-    for (int i = 0; i < queryNodes.size()-1; i++) {
-        std::unordered_set<int> visited;
-        // std::unordered_set<int> result;
-        // visited.insert(next);
-
-        std::vector<int> result;
-        std::vector<std::vector<int>> allPaths;
-        int tmp_k = 0;
-        int tmp_next = 0;
-        dfs(next, nodeToComponentId[queryNodes[i+1]], visited, result, allPaths);
-        for (auto &x : allPaths) {
-            for (auto &node : result) {
-                for (auto subNode : ComponentToNodes[node]) {
-                    if (tmp_k < coreMinimumDegree[coreIndex[subNode]]) {
-                        tmp_k = coreMinimumDegree[coreIndex[subNode]];
-                        tmp_next = subNode;
-                    }
-                    break;
-                }
-            }  
-        }
-        if (k > tmp_k) {
-            k = tmp_k;
-            next = tmp_next;
-        }
-
-        // for (auto &node : result) {
-        //     for (auto subNode : ComponentToNodes[node]) {
-        //         if (k > coreMinimumDegree[coreIndex[subNode]]) {
-        //             k = coreMinimumDegree[coreIndex[subNode]];
-        //             next = subNode;
-        //         }
-        //         break;
-        //     }
-        // }
-    }
-
-    return k;
 }

@@ -75,7 +75,6 @@ void SharingIndex::batchsearch(query_group  &group, std::string path = "") {
     
             // 确定最小核心索引
             int k = k1;
-            // int k = findCommenK_2(q);
     
             // 确定k_min值
             if (k < k_min) {
